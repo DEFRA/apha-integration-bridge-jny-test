@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 
-const oneMinute = 60 * 1000
+// const oneMinute = 60 * 1000
+export const cucumberTag = process.env.ENVIRONMENT
 
 export const config = {
   //
@@ -9,6 +10,7 @@ export const config = {
   // ====================
   // WebdriverIO supports running e2e tests as well as unit and component tests.
   runner: 'local',
+
   //
   // Set a base URL in order to shorten url command calls. If your `url` parameter starts
   // with `/`, the base url gets prepended, not including the path portion of your baseUrl.
@@ -21,7 +23,14 @@ export const config = {
   port: process.env.CHROMEDRIVER_PORT || 4444,
 
   // Tests to run
-  specs: ['./test/specs/**/*.js'],
+  // Tests to run
+  specs: ['./test/features/*.feature'],
+  cucumberOpts: {
+    require: ['./test/step-definitions/*.js'],
+    format: ['pretty', 'progress', 'summary'],
+    tags: [`@${cucumberTag}`],
+    timeout: 60000
+  },
   // Tests to exclude
   exclude: [],
   maxInstances: 1,
@@ -70,7 +79,7 @@ export const config = {
   waitforInterval: 200,
   connectionRetryTimeout: 6000,
   connectionRetryCount: 3,
-  framework: 'mocha',
+  framework: 'cucumber',
 
   reporters: [
     [
@@ -86,17 +95,20 @@ export const config = {
       // Allure is used to generate the final HTML report
       'allure',
       {
-        outputDir: 'allure-results'
+        outputDir: 'allure-results',
+        disableWebdriverStepsReporting: true,
+        disableWebdriverScreenshotsReporting: true,
+        useCucumberStepReporter: true
       }
     ]
   ],
 
   // Options to be passed to Mocha.
   // See the full list at http://mochajs.org/
-  mochaOpts: {
-    ui: 'bdd',
-    timeout: oneMinute
-  },
+  // mochaOpts: {
+  //   ui: 'bdd',
+  //   timeout: oneMinute
+  // },
   //
   // =====
   // Hooks
