@@ -1,0 +1,31 @@
+export const workschedulesData = [
+  {
+    workOrderId: 'WS-75560',
+    region: 'SCOTLAND',
+    dueDate: '19-MAY-24',
+    countryCode: 'SCOTLAND',
+    contactid: 'C165595',
+    locationid: 'L159133',
+    orderid: 'WS-75560',
+    orderDescription: 'Work Schedule - ',
+    openActivities: 3,
+    activityUrgency: 30,
+    activityWorkArea: 'Offspring Cohort Trace',
+    activityWorkAreaCategory: 'TSE - BSE',
+    deadline: '26-MAR-25',
+    activityDueDate: '26-MAR-25',
+    activityCountry: 'SCOTLAND',
+    northing: 805200,
+    easting: 342300,
+    locationContactName: 'L159133',
+    refObjectKey: 'AH-AC WSA-108410',
+    activityDescription: null,
+    activityStatus: 'New',
+    cph: '66/045/0060',
+    activityId: 'L159133',
+    activityDeadline: '26-MAR-25',
+    pyassignmentstatus: 'New',
+    activityInstructions: 'Define Trace Properties',
+    pxurgencyassign: 100
+  }
+]
