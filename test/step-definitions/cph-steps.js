@@ -40,13 +40,13 @@ if (env === 'perf-test') {
 // const perf_secretId1 = 'nhh2d5fusfcr5bcunove15227s1jr5tim8e95022qhniaqbjecj'
 
 if (env === 'test') {
-  tokenEnv = ''
+  tokenEnv = '6bf3a'
   clintId = '4sfks8pcsc8s7bt6dti6nh4clc'
   secretId = '17rc1dh65mqcfpue4fqngri19va0orasgkt68c6c05u8h0rhf3ie'
 }
 
 if (env === 'test-ext') {
-  tokenEnv = ''
+  tokenEnv = '8ec5c'
 
   clintId = '3bg39mg39v27fd8qqlnuvfcsp0'
   secretId = 'vdbpuomlv3bg4vn671d277suortfvuiea4972qiuaircparke4o'
