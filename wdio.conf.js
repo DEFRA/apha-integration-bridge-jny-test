@@ -22,13 +22,14 @@ export const config = {
   // ====================
   // WebdriverIO supports running e2e tests as well as unit and component tests.
   runner: 'local',
-
+  headless: true,
   //
   // Set a base URL in order to shorten url command calls. If your `url` parameter starts
   // with `/`, the base url gets prepended, not including the path portion of your baseUrl.
   // If your `url` parameter starts without a scheme or `/` (like `some/path`), the base url
   // gets prepended directly.
-  baseUrl: `https://apha-integration-bridge-jny-test.${process.env.ENVIRONMENT}.cdp-int.defra.cloud`,
+  // baseUrl: `https://apha-integration-bridge-jny-test.${process.env.ENVIRONMENT}.cdp-int.defra.cloud`,
+  baseUrl: `https://apha-integration-bridge.api.${cucumberTag}.cdp-int.defra.cloud`,
 
   // Connection to remote chromedriver
   hostname: process.env.CHROMEDRIVER_URL || '127.0.0.1',
