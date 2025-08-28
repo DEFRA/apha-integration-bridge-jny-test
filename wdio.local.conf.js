@@ -9,7 +9,7 @@ const execArgv = ['--loader', 'esm-module-alias/loader']
 if (debug) {
   execArgv.push('--inspect')
 }
-export const cucumberTag = 'perf-test'
+export const cucumberTag = 'dev'
 export const config = {
   //
   // ====================
@@ -17,6 +17,7 @@ export const config = {
   // ====================
   // WebdriverIO supports running e2e tests as well as unit and component tests.
   runner: 'local',
+  after: undefined,
   //
   // ==================
   // Specify Test Files
@@ -44,7 +45,7 @@ export const config = {
   exclude: [
     // 'path/to/excluded/files'
   ],
-  // injectGlobals: false,
+  injectGlobals: false,
   //
   // ============
   // Capabilities
@@ -323,7 +324,13 @@ export const config = {
    */
   onComplete: function (exitCode, config, capabilities, results) {
     const reportError = new Error('Could not generate Allure report')
-    const generation = allure(['generate', 'allure-results', '--clean'])
+    const generation = allure([
+      'generate',
+      'allure-results',
+      '--clean',
+      '--name',
+      `APHA-Test-Results-on-environment-${cucumberTag}`
+    ])
 
     return new Promise((resolve, reject) => {
       const generationTimeout = setTimeout(() => reject(reportError), oneMinute)
@@ -335,7 +342,7 @@ export const config = {
           return reject(reportError)
         }
 
-        allure(['open'])
+        allure(['open']) // Optional: remove if you're generating in CI
         resolve()
       })
     })

@@ -1,9 +1,9 @@
-@dev
+
 Feature: (AIL-245) HOLDINGS endpoint tests
 
   Background:
     Given the auth token
-
+  @dev
   Scenario Outline: 01 Verify that, Unauthorised response (401) should be returned if token is empty
     Given the user submits a CPH request with invalid token "<cphNumber>"
     When the request is processed by the system
