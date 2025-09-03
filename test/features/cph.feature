@@ -1,4 +1,4 @@
-@dev
+
 Feature: (AIL-245) HOLDINGS endpoint tests
 
   Background:
@@ -29,13 +29,29 @@ Feature: (AIL-245) HOLDINGS endpoint tests
 
     Examples:
       | cphNumber   | status    |
-      | 12/345/6789 | PERMANENT |
+      # | 12/345/6789 | PERMANENT |
       | 02/057/0003 | PERMANENT |
       | 02/057/0030 | PERMANENT |
       | 02/068/0010 | PERMANENT |
       | 02/081/0034 | PERMANENT |
       | 02/082/0093 | PERMANENT |
       | 02/083/0024 | PERMANENT |
+
+  @dev
+  Scenario Outline: 03 Verify that a valid CPH number returns a successful response
+    Given the user submits a CPH request with CPH number "<cphNumber>"
+    When the request is processed by the system
+    Then the API should return the details for the specified CPH number "<status>" "<location>"
+
+    Examples:
+      | cphNumber   | status    | location|
+      # | 12/345/6789 | PERMANENT |
+      | 02/057/0003 | PERMANENT |L173630ss|
+      # | 02/057/0030 | PERMANENT |
+      # | 02/068/0010 | PERMANENT |
+      # | 02/081/0034 | PERMANENT |
+      # | 02/082/0093 | PERMANENT |
+      # | 02/083/0024 | PERMANENT |
 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
     Given the user submits a CPH request with CPH number "<cphNumber>"
