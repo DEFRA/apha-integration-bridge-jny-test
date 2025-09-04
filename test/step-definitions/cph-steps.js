@@ -1,7 +1,7 @@
 import { Cph } from '../responseprocessor/cph'
 import { Given, When, Then } from '@cucumber/cucumber'
-// import { cucumberTag, config } from './../../wdio.conf'
-import { cucumberTag, config } from './../../wdio.local.conf'
+import { cucumberTag, config } from './../../wdio.conf'
+// import { cucumberTag, config } from './../../wdio.local.conf'
 import {
   token,
   strProcessor,
@@ -131,43 +131,6 @@ When(/^the request is processed by the system$/, async function () {
   expect(response).to.not.equal(undefined)
 })
 
-// Then(
-//   /^the API should return the details for the specified CPH number (.+)$/,
-//   async function (expectedCphNumber) {
-//     const status = strProcessor(expectedCphNumber)
-//     expect(response.status).to.equal(responseCodes.ok)
-//     // Verifying the expected keys present from the holdings successful response
-//     const resData = response.data.data
-//     expect(resData).to.have.property(holdingsendpointKeys.TYPE)
-//     expect(resData).to.have.property(holdingsendpointKeys.ID)
-//     expect(resData).to.have.property(holdingsendpointKeys.CPHTYPE)
-
-//     const cphResponseData = new Cph(response.data.data)
-
-//     // Get the type of relationship 'location'
-//     const locationData = cphResponseData.getRelationshipData('location')
-//     console.log("locationData", locationData) // Output: { type: 'locations', id: 'L171261' }
-
-//     // Get the link to the 'location' relationship
-//     const locationLink = cphResponseData.getRelationshipLink('location')
-//     console.log("locationLink", locationLink) // Output: /holdings/12/123/1234/relationships/location
-
-//     // Verifying that the API response includes type as 'holdings'
-//     expect(cphResponseData.getType()).to.equal(expectedType)
-//     // Verifying that the API response includes id with CPH number
-//     expect(cphResponseData.getId()).to.equal(cleanStr)
-//     const expectedCphTypeValidation = expectedCphTypes.filter(
-//       (expectedType) =>
-//         expectedType.toUpperCase() ===
-//         cphResponseData.getCphType().toUpperCase()
-//     )
-
-//     // Verifying that the API response includes only valid 'cphType' values: 'permanent', 'temporary', or 'emergency'
-//     expect(expectedCphTypeValidation).to.have.length.above(0)
-//     expect(cphResponseData.getCphType().toUpperCase()).to.equal(status)
-//   }
-// )
-
 Then(
   /^the API should return the details for the specified CPH number (.+) (.+)$/,
   async function (expectedCpStatus, expectedLocationID) {
@@ -178,22 +141,34 @@ Then(
     expect(resData).to.have.property(holdingsendpointKeys.TYPE)
     expect(resData).to.have.property(holdingsendpointKeys.ID)
     expect(resData).to.have.property(holdingsendpointKeys.CPHTYPE)
-
-    const cphResponseData = new Cph(response.data.data)
+    const mergedPayload = {
+      ...response.data.data,
+      links: response.data.links
+    }
+    const cphResponseData = new Cph(mergedPayload)
 
     // Get the type of relationship 'location'
     const locationData = cphResponseData.getRelationshipData('location')
     // console.log('locationData', locationData) // Output: { type: 'locations', id: 'L171261' }
 
     // Get the link to the 'location' relationship
-    // const locationLink = cphResponseData.getRelationshipLink('location')
+    const locationLink = cphResponseData.getRelationshipLink('location')
     // console.log('locationLink', locationLink) // Output: /holdings/12/123/1234/relationships/location
 
-    try {
-      expect(locationData.id).to.equal(expectedLocationID)
-    } catch (e) {
-      // console.log('Incorrect: ', locationData.id)
-    }
+    expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
+    // try {
+    //   expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
+    // } catch (e) {
+    //   console.log(
+    //     'Incorrect: ',
+    //     locationData.id,
+    //     expectedLocationID,
+    //     cphResponseData.getId()
+    //   )
+    // }
+    expect(locationLink).to.equal(
+      `/holdings/${cphResponseData.getId()}/relationships/location`
+    )
 
     // Verifying that the API response includes type as 'holdings'
     expect(cphResponseData.getType()).to.equal(expectedType)
@@ -205,6 +180,9 @@ Then(
         cphResponseData.getCphType().toUpperCase()
     )
 
+    // Get the link to the 'location' relationship
+    const selfLink = cphResponseData.getSelfLink()
+    expect(selfLink).to.equal(`/holdings/${cphResponseData.getId()}`)
     // Verifying that the API response includes only valid 'cphType' values: 'permanent', 'temporary', or 'emergency'
     expect(expectedCphTypeValidation).to.have.length.above(0)
     expect(cphResponseData.getCphType().toUpperCase()).to.equal(status)
