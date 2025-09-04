@@ -132,17 +132,44 @@ When(/^the request is processed by the system$/, async function () {
 })
 
 Then(
-  /^the API should return the details for the specified CPH number (.+)$/,
-  async function (expectedCphNumber) {
-    const status = strProcessor(expectedCphNumber)
+  /^the API should return the details for the specified CPH number (.+) (.+)$/,
+  async function (expectedCpStatus, expectedLocationID) {
+    const status = strProcessor(expectedCpStatus)
     expect(response.status).to.equal(responseCodes.ok)
     // Verifying the expected keys present from the holdings successful response
     const resData = response.data.data
     expect(resData).to.have.property(holdingsendpointKeys.TYPE)
     expect(resData).to.have.property(holdingsendpointKeys.ID)
     expect(resData).to.have.property(holdingsendpointKeys.CPHTYPE)
+    const mergedPayload = {
+      ...response.data.data,
+      links: response.data.links
+    }
+    const cphResponseData = new Cph(mergedPayload)
 
-    const cphResponseData = new Cph(response.data.data)
+    // Get the type of relationship 'location'
+    const locationData = cphResponseData.getRelationshipData('location')
+    // console.log('locationData', locationData) // Output: { type: 'locations', id: 'L171261' }
+
+    // Get the link to the 'location' relationship
+    const locationLink = cphResponseData.getRelationshipLink('location')
+    // console.log('locationLink', locationLink) // Output: /holdings/12/123/1234/relationships/location
+
+    expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
+    // try {
+    //   expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
+    // } catch (e) {
+    //   console.log(
+    //     'Incorrect: ',
+    //     locationData.id,
+    //     expectedLocationID,
+    //     cphResponseData.getId()
+    //   )
+    // }
+    expect(locationLink).to.equal(
+      `/holdings/${cphResponseData.getId()}/relationships/location`
+    )
+
     // Verifying that the API response includes type as 'holdings'
     expect(cphResponseData.getType()).to.equal(expectedType)
     // Verifying that the API response includes id with CPH number
@@ -153,29 +180,14 @@ Then(
         cphResponseData.getCphType().toUpperCase()
     )
 
+    // Get the link to the 'location' relationship
+    const selfLink = cphResponseData.getSelfLink()
+    expect(selfLink).to.equal(`/holdings/${cphResponseData.getId()}`)
     // Verifying that the API response includes only valid 'cphType' values: 'permanent', 'temporary', or 'emergency'
     expect(expectedCphTypeValidation).to.have.length.above(0)
     expect(cphResponseData.getCphType().toUpperCase()).to.equal(status)
   }
 )
-// Then(
-//   /^endpoint return unauthorised response code (.+)$/,
-//   async (statusCode) => {
-//     const actualResponse = response.data
-//     expect(response.status.toString()).to.equal(
-//       statusCode.replace(/['"]+/g, '')
-//     )
-//     // Verifying the error response has expected keys
-//     expect(actualResponse).to.have.property(holdingsendpointKeys.STATUSCODE)
-//     expect(actualResponse).to.have.property(holdingsendpointKeys.ERROR)
-//     expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
-//     expect(actualResponse.message).to.equal(holdingsendpointKeys.UNAUTH_MESSAGE)
-//     expect(actualResponse.statusCode.toString()).to.equal(
-//       statusCode.replace(/['"]+/g, '')
-//     )
-//     expect(actualResponse.error).to.equal(holdingsendpointKeys.UNAUTHORISED)
-//   }
-// )
 
 Then(
   /^endpoint return unauthorised response code (.+)$/,
