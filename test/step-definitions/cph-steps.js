@@ -1,7 +1,7 @@
 import { Cph } from '../responseprocessor/cph'
 import { Given, When, Then } from '@cucumber/cucumber'
-import { cucumberTag, config } from './../../wdio.conf'
-// import { cucumberTag, config } from './../../wdio.local.conf'
+// import { cucumberTag, config } from './../../wdio.conf'
+import { cucumberTag, config } from './../../wdio.local.conf'
 import {
   token,
   strProcessor,
@@ -10,6 +10,9 @@ import {
 } from '../utils/token'
 import axios from 'axios'
 import { expect } from 'chai'
+// import { appendFileSync } from 'fs'
+
+// const filePath = './output.txt'
 
 const env = cucumberTag
 
@@ -135,8 +138,16 @@ Then(
   /^the API should return the details for the specified CPH number (.+)$/,
   async function (expectedCphNumber) {
     const status = strProcessor(expectedCphNumber)
+    // try {
     expect(response.status).to.equal(responseCodes.ok)
-    // Verifying the expected keys present from the holdings successful response
+    // appendFileSync(filePath, 'Pass: ' + cleanStr + '\n')
+    // console.log('Pass ', cleanStr)
+    // } catch (e) {
+    //   appendFileSync(filePath, 'Fail: ' + cleanStr + '\n')
+    //   // console.log('Failed ', cleanStr)
+    // }
+
+    // // Verifying the expected keys present from the holdings successful response
     const resData = response.data.data
     expect(resData).to.have.property(holdingsendpointKeys.TYPE)
     expect(resData).to.have.property(holdingsendpointKeys.ID)
