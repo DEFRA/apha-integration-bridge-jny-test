@@ -25,14 +25,13 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
       protocol: proxyUrl.protocol.replace(':', '')
     }
   }
-
-  // const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-  //   headers
-  // })
   const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
     headers,
     ...proxyConfig
   })
+  // const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
+  //   headers
+  // })
 
   expect(response.status).to.equal(200)
   return response.data.access_token
@@ -67,11 +66,15 @@ export const holdingsendpointKeys = {
   TYPE: 'type',
   ID: 'id',
   CPHTYPE: 'cphType',
-  HOLDING_NOT_FOUND: 'Holding not found',
+  HOLDING_NOT_FOUND: 'Holding not found or inactive',
   NOT_FOUND: 'NOT_FOUND',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_PARAMETERS: 'Invalid request parameters',
-  BAD_REQUEST: 'BAD_REQUEST'
+  BAD_REQUEST: 'BAD_REQUEST',
+  DUPLICATE_MSG:
+    'Duplicate Location resources found associated with given CPH number.',
+  DUPLCIATE_CODE: 'DUPLICATE_RESOURCES_FOUND',
+  ACCESS_DENIED: 'Access Denied'
 }
 // These are different API response codes
 export const responseCodes = {

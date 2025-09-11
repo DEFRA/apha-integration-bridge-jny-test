@@ -197,16 +197,19 @@ Then(
     expect(response.status.toString()).to.equal(
       statusCode.replace(/['"]+/g, '')
     )
+    let verificatinStatus = false
     // Verifying the error response has expected keys
-    if (statusCode === '401') {
+    if (response.status === 401) {
       expect(actualResponse.message).to.equal(holdingsendpointKeys.UNAUTHORISED)
-      expect()
+      verificatinStatus = true
     }
-    if (statusCode === '403') {
-      expect(actualResponse.message).to.equal(
-        holdingsendpointKeys.UNAUTH_MESSAGE
+    if (response.status === 403) {
+      expect(actualResponse.Message).to.equal(
+        holdingsendpointKeys.ACCESS_DENIED
       )
+      verificatinStatus = true
     }
+    expect(verificatinStatus).to.equal(true)
   }
 )
 Then(
@@ -220,10 +223,23 @@ Then(
     expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
     expect(actualResponse).to.have.property(holdingsendpointKeys.CODE)
     expect(actualResponse).to.have.property(holdingsendpointKeys.ERRORS)
-    expect(actualResponse.message).to.equal(
-      holdingsendpointKeys.HOLDING_NOT_FOUND
-    )
-    expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
+    let verificatinStatus = false
+
+    if (response.status === 409) {
+      expect(actualResponse.message).to.equal(
+        holdingsendpointKeys.DUPLICATE_MSG
+      )
+
+      expect(actualResponse.code).to.equal(holdingsendpointKeys.DUPLCIATE_CODE)
+      verificatinStatus = true
+    } else {
+      expect(actualResponse.message).to.equal(
+        holdingsendpointKeys.HOLDING_NOT_FOUND
+      )
+      expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
+      verificatinStatus = true
+    }
+    expect(verificatinStatus).to.equal(true)
     expect(actualResponse.errors.length).to.equal(0)
   }
 )
