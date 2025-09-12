@@ -9,7 +9,7 @@ const execArgv = ['--loader', 'esm-module-alias/loader']
 if (debug) {
   execArgv.push('--inspect')
 }
-export const cucumberTag = 'dev'
+export const cucumberTag = 'perf-test'
 export const config = {
   //
   // ====================
