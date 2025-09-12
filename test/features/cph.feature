@@ -25,7 +25,6 @@ Feature: (AIL-245) HOLDINGS endpoint tests
   Scenario Outline: 03 Verify that a valid CPH number returns a successful response
     Given the user submits a CPH request with CPH number "<cphNumber>"
     When the request is processed by the system
-    # Then the API should return the details for the specified CPH number "<status>"
     Then the API should return the details for the specified CPH number "<status>" "<location>"
 
     Examples:
@@ -38,22 +37,7 @@ Feature: (AIL-245) HOLDINGS endpoint tests
       | 02/082/0093 | PERMANENT |L128605|
       | 02/083/0024 | PERMANENT |L168737|
 
-  Scenario Outline: 04 Verify that a valid CPH number returns a successful response
-    Given the user submits a CPH request with CPH number "<cphNumber>"
-    When the request is processed by the system
-    Then the API should return the details for the specified CPH number "<status>" "<location>"
-
-    Examples:
-      | cphNumber   | status    | location|
-      # | 12/345/6789 | PERMANENT |
-      | 02/057/0003 | PERMANENT |L173630|
-      | 02/057/0030 | PERMANENT |L130765|
-      | 02/068/0010 | PERMANENT |L15077|
-      | 02/081/0034 | PERMANENT |L126159|
-      | 02/082/0093 | PERMANENT |L128605|
-      | 02/083/0024 | PERMANENT |L168737|
-
-  Scenario Outline: 05 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
+  Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
     Given the user submits a CPH request with CPH number "<cphNumber>"
     When the request is processed by the system
     Then endpoint return unsuccessful response code "<statuscode>"
@@ -62,7 +46,7 @@ Feature: (AIL-245) HOLDINGS endpoint tests
       | cphNumber   | statuscode |
       | 02/055/0224 |        404 |
 
-  Scenario Outline: 06 Verify that the appropriate error message is returned when a user supplies an invalid CPH number
+  Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid CPH number
     Given the user submits a CPH request with CPH number "<cphNumber>"
     When the request is processed by the system
     Then endpoint must return unsuccessful error response "<message>"
@@ -78,7 +62,7 @@ Feature: (AIL-245) HOLDINGS endpoint tests
       |   2w/05w/022w | "countyId" with value "2w" fails to match the required pattern: /^\\d+$/. "parishId" with value "05w" fails to match the required pattern: /^\\d+$/. "holdingId" with value "022w" fails to match the required pattern: /^\\d+$/                                                                                                                                   |
       | w/w/w         | "countyId" length must be 2 characters long. "countyId" with value "w" fails to match the required pattern: /^\\d+$/. "parishId" length must be 3 characters long. "parishId" with value "w" fails to match the required pattern: /^\\d+$/. "holdingId" length must be 4 characters long. "holdingId" with value "w" fails to match the required pattern: /^\\d+$/ |
 
-Scenario Outline: 07 Verify that the given CPH number has more than one location,appropriate error message must be returned 
+Scenario Outline: 06 Verify that the given CPH number has more than one location,appropriate error message must be returned 
     Given the user submits a CPH request with CPH number "<cphNumber>"
     When the request is processed by the system
     Then endpoint return unsuccessful response code "<statuscode>"
