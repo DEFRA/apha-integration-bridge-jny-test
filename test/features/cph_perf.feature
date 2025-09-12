@@ -25,11 +25,11 @@ Feature: (AIL-245) HOLDINGS endpoint tests
   Scenario Outline: 03 Verify that a valid CPH number returns a successful response
     Given the user submits a CPH request with CPH number "<cphNumber>"
     When the request is processed by the system
-    Then the API should return the details for the specified CPH number "<status>"
+    Then the API should return the details for the specified CPH number "<status>" "<location>"
 
     Examples:
-      | cphNumber   | status    |
-      | 79/465/0625 | PERMANENT |
+      | cphNumber   | status    |location|
+      | 79/465/0625 | PERMANENT |L12329|
 
 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
