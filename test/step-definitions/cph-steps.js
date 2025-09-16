@@ -10,6 +10,9 @@ import {
 } from '../utils/token'
 import axios from 'axios'
 import { expect } from 'chai'
+// import { appendFileSync } from 'fs'
+
+// const filePath = './output.txt'
 
 const env = cucumberTag
 
@@ -154,18 +157,19 @@ Then(
     // Get the link to the 'location' relationship
     const locationLink = cphResponseData.getRelationshipLink('location')
     // console.log('locationLink', locationLink) // Output: /holdings/12/123/1234/relationships/location
+    // appendFileSync(
+    //   filePath,
+    //   '|' +
+    //     cphResponseData.getId() +
+    //     '|' +
+    //     cphResponseData.getCphType().toUpperCase() +
+    //     '|' +
+    //     locationData.id +
+    //     '|\n'
+    // )
 
     expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
-    // try {
-    //   expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
-    // } catch (e) {
-    //   console.log(
-    //     'Incorrect: ',
-    //     locationData.id,
-    //     expectedLocationID,
-    //     cphResponseData.getId()
-    //   )
-    // }
+
     expect(locationLink).to.equal(
       `/holdings/${cphResponseData.getId()}/relationships/location`
     )
