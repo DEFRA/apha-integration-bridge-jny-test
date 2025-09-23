@@ -21,20 +21,6 @@ Feature: (AIL-245) HOLDINGS endpoint tests
     Examples:
       | endpoint | id          | statuscode |
       | holdings | 02/055/0224 |        403 |
-  # Scenario Outline: 01 Verify that, Unauthorised response (401) should be returned if token is empty
-  #   Given the user submits a CPH request with invalid token "<cphNumber>"
-  #   When the request is processed by the system
-  #   Then endpoint return unauthorised response code "<statuscode>"
-  #   Examples:
-  #     | cphNumber   | statuscode |
-  #     | 02/055/0224 |        401 |
-  # Scenario Outline: 02 Verify that, Forbidden response (403) should be returned if token is modified or tampered
-  #   Given the user submits a CPH request with valid token but tampered "<cphNumber>"
-  #   When the request is processed by the system
-  #   Then endpoint return unauthorised response code "<statuscode>"
-  #   Examples:
-  #     | cphNumber   | statuscode |
-  #     | 02/055/0224 |        403 |
 
   Scenario Outline: 03 Verify that a valid CPH number returns a successful response
     Given the user submits "<endpoint>" "<id>" request
@@ -49,7 +35,6 @@ Feature: (AIL-245) HOLDINGS endpoint tests
       | holdings | 02/081/0034 | PERMANENT | L126159  |
       | holdings | 02/082/0093 | PERMANENT | L128605  |
       | holdings | 02/083/0024 | PERMANENT | L168737  |
-      # | 12/345/6789 | PERMANENT |
 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
     Given the user submits "<endpoint>" "<id>" request

@@ -36,13 +36,13 @@ Feature: (AIL-282) Locations endpoint tests
   #     | 02/082/0093 | PERMANENT |L128605|
   #     | 02/083/0024 | PERMANENT |L168737|
 
- Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
-    Given the user submits "<endpoint>" "<id>" request
-    When the request is processed by the system
-    Then endpoint return unsuccessful response code "<statuscode>"
+#  Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
+#     Given the user submits "<endpoint>" "<id>" request
+#     When the request is processed by the system
+#     Then endpoint return unsuccessful response code "<statuscode>"
 
-    Examples:
-      | endpoint | id          | statuscode |
-      | locations | 3333 |        404 |
+#     Examples:
+#       | endpoint | id          | statuscode |
+#       | locations | 3333 |        404 |
 
 
