@@ -67,31 +67,10 @@ const tokenUrl = `https://apha-integration-bridge-${tokenEnv}.auth.eu-west-2.ama
 
 let tokenGen = ''
 let response = ''
-let cleanStr = ''
 Given(/^the auth token$/, async () => {
   tokenGen = await token(tokenUrl, clintId, secretId)
 })
 
-Given(
-  /^the user submits a CPH request with invalid token (.+)$/,
-  async function (cphNumber) {
-    cleanStr = strProcessor(cphNumber)
-
-    tokenGen = 'sss'
-    const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
-    try {
-      response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${tokenGen}`
-        }
-      })
-    } catch (error) {
-      response = error.response
-    }
-  }
-)
-
-//locations endpoint
 Given(
   'the user submits {string} {string} request with invalid token',
   async function (endpt, actualid) {
@@ -112,7 +91,6 @@ Given(
   }
 )
 
-//locations endpoint
 Given(
   'the user submits {string} {string} with valid token but tampered',
   async function (endpt, actualid) {
@@ -135,25 +113,6 @@ Given(
 )
 
 Given(
-  /^the user submits a CPH request with valid token but tampered (.+)$/,
-  async function (cphNumber) {
-    cleanStr = strProcessor(cphNumber)
-
-    tokenGen = await token(tokenUrl, clintId, secretId)
-    tokenGen = tokenGen + 'a'
-    const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
-    try {
-      response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${tokenGen}`
-        }
-      })
-    } catch (error) {
-      response = error.response
-    }
-  }
-)
-Given(
   'the user submits {string} {string} request',
   async function (endpt, actualid) {
     endpoint = strProcessor(endpt)
@@ -171,25 +130,6 @@ Given(
     }
   }
 )
-
-/*Deleted*/
-// Given(
-//   /^the user submits a CPH request with CPH number (.+)$/,
-//   async function (cphNumber) {
-//     cleanStr = strProcessor(cphNumber)
-
-//     const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
-//     try {
-//       response = await axios.get(endpoint, {
-//         headers: {
-//           Authorization: `Bearer ${tokenGen}`
-//         }
-//       })
-//     } catch (error) {
-//       response = error.response
-//     }
-//   }
-// )
 
 When(/^the request is processed by the system$/, async function () {
   // Checking the response is return or not
