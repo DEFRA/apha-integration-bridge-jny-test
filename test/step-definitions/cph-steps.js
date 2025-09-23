@@ -1,7 +1,7 @@
 import { Cph } from '../responseprocessor/cph'
 import { Given, When, Then } from '@cucumber/cucumber'
-import { cucumberTag, config } from './../../wdio.conf'
-// import { cucumberTag, config } from './../../wdio.local.conf'
+// import { cucumberTag, config } from './../../wdio.conf'
+import { cucumberTag, config } from './../../wdio.local.conf'
 import {
   token,
   strProcessor,
@@ -17,8 +17,9 @@ import { expect } from 'chai'
 const env = cucumberTag
 
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
-const expectedType = 'holdings'
-
+// const expectedType = 'holdings'
+let id = ''
+let endpoint = ''
 let clintId = ''
 let secretId = ''
 let tokenEnv = ''
@@ -90,6 +91,49 @@ Given(
   }
 )
 
+//locations endpoint
+Given(
+  'the user submits {string} {string} request with invalid token',
+  async function (endpt, actualid) {
+    endpoint = strProcessor(endpt)
+    id = strProcessor(actualid)
+
+    tokenGen = 'sss'
+    const uri = `${baseUrl}/${endpoint}/${id}`
+    try {
+      response = await axios.get(uri, {
+        headers: {
+          Authorization: `Bearer ${tokenGen}`
+        }
+      })
+    } catch (error) {
+      response = error.response
+    }
+  }
+)
+
+//locations endpoint
+Given(
+  'the user submits {string} {string} with valid token but tampered',
+  async function (endpt, actualid) {
+    endpoint = strProcessor(endpt)
+    id = strProcessor(actualid)
+
+    tokenGen = await token(tokenUrl, clintId, secretId)
+    tokenGen = tokenGen + 'a'
+    const uri = `${baseUrl}/${endpoint}/${id}`
+    try {
+      response = await axios.get(uri, {
+        headers: {
+          Authorization: `Bearer ${tokenGen}`
+        }
+      })
+    } catch (error) {
+      response = error.response
+    }
+  }
+)
+
 Given(
   /^the user submits a CPH request with valid token but tampered (.+)$/,
   async function (cphNumber) {
@@ -109,15 +153,15 @@ Given(
     }
   }
 )
-
 Given(
-  /^the user submits a CPH request with CPH number (.+)$/,
-  async function (cphNumber) {
-    cleanStr = strProcessor(cphNumber)
+  'the user submits {string} {string} request',
+  async function (endpt, actualid) {
+    endpoint = strProcessor(endpt)
+    id = strProcessor(actualid)
 
-    const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
+    const uri = `${baseUrl}/${endpoint}/${id}`
     try {
-      response = await axios.get(endpoint, {
+      response = await axios.get(uri, {
         headers: {
           Authorization: `Bearer ${tokenGen}`
         }
@@ -127,6 +171,25 @@ Given(
     }
   }
 )
+
+/*Deleted*/
+// Given(
+//   /^the user submits a CPH request with CPH number (.+)$/,
+//   async function (cphNumber) {
+//     cleanStr = strProcessor(cphNumber)
+
+//     const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
+//     try {
+//       response = await axios.get(endpoint, {
+//         headers: {
+//           Authorization: `Bearer ${tokenGen}`
+//         }
+//       })
+//     } catch (error) {
+//       response = error.response
+//     }
+//   }
+// )
 
 When(/^the request is processed by the system$/, async function () {
   // Checking the response is return or not
@@ -175,9 +238,9 @@ Then(
     )
 
     // Verifying that the API response includes type as 'holdings'
-    expect(cphResponseData.getType()).to.equal(expectedType)
+    expect(cphResponseData.getType()).to.equal(endpoint)
     // Verifying that the API response includes id with CPH number
-    expect(cphResponseData.getId()).to.equal(cleanStr)
+    expect(cphResponseData.getId()).to.equal(id)
     const expectedCphTypeValidation = expectedCphTypes.filter(
       (expectedType) =>
         expectedType.toUpperCase() ===
@@ -186,7 +249,7 @@ Then(
 
     // Get the link to the 'location' relationship
     const selfLink = cphResponseData.getSelfLink()
-    expect(selfLink).to.equal(`/holdings/${cphResponseData.getId()}`)
+    expect(selfLink).to.equal(`/${endpoint}/${cphResponseData.getId()}`)
     // Verifying that the API response includes only valid 'cphType' values: 'permanent', 'temporary', or 'emergency'
     expect(expectedCphTypeValidation).to.have.length.above(0)
     expect(cphResponseData.getCphType().toUpperCase()).to.equal(status)
@@ -273,7 +336,7 @@ Then(
     expect(errorMeesage.message).to.equal(cleanedMessage)
     expect(actualResponse.errors.length).to.equal(1)
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
-    const cpharray = cleanStr.split('/')
+    const cpharray = id.split('/')
     expect(errorMeesage.countyId).to.equal(cpharray[0])
     expect(errorMeesage.parishId).to.equal(cpharray[1])
     expect(errorMeesage.holdingId).to.equal(cpharray[2])

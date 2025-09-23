@@ -34,7 +34,7 @@ export const config = {
   // then the current working directory is where your `package.json` resides, so `wdio`
   // will be called from there.
   //
-  specs: ['./test/features/*.feature'],
+  specs: ['./test/features/*/*.feature'],
   cucumberOpts: {
     require: ['./test/step-definitions/*.js'],
     format: ['pretty', 'progress', 'summary'],

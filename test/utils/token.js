@@ -16,22 +16,22 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
     client_secret: clientSecret
   })
 
-  const proxyUrl = new URL(process.env.HTTP_PROXY)
+  // const proxyUrl = new URL(process.env.HTTP_PROXY)
 
-  const proxyConfig = {
-    proxy: {
-      host: proxyUrl.hostname,
-      port: parseInt(proxyUrl.port),
-      protocol: proxyUrl.protocol.replace(':', '')
-    }
-  }
-  const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-    headers,
-    ...proxyConfig
-  })
+  // const proxyConfig = {
+  //   proxy: {
+  //     host: proxyUrl.hostname,
+  //     port: parseInt(proxyUrl.port),
+  //     protocol: proxyUrl.protocol.replace(':', '')
+  //   }
+  // }
   // const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-  //   headers
+  //   headers,
+  //   ...proxyConfig
   // })
+  const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
+    headers
+  })
 
   expect(response.status).to.equal(200)
   return response.data.access_token
