@@ -76,6 +76,15 @@ export const holdingsendpointKeys = {
   DUPLCIATE_CODE: 'DUPLICATE_RESOURCES_FOUND',
   ACCESS_DENIED: 'Access Denied'
 }
+
+export const locationsKeys = {
+  locationsId: 'locationId'
+}
+
+export const methodNames = {
+  holdings: 'holdings',
+  locations: 'locations'
+}
 // These are different API response codes
 export const responseCodes = {
   ok: 200,

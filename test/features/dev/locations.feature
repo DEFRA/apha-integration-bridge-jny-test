@@ -1,4 +1,3 @@
-@dev
 Feature: (AIL-282) Locations endpoint tests
 
   Background:
@@ -10,7 +9,7 @@ Feature: (AIL-282) Locations endpoint tests
     Then endpoint return unauthorised response code "<statuscode>"
 
     Examples:
-      | endpoint  | id          | statuscode |
+      | endpoint  | id      | statuscode |
       | locations | L173630 |        401 |
 
   Scenario Outline: 02 Verify that, Forbidden response (403) should be returned if token is modified or tampered
@@ -19,9 +18,8 @@ Feature: (AIL-282) Locations endpoint tests
     Then endpoint return unauthorised response code "<statuscode>"
 
     Examples:
-      | endpoint  | id          | statuscode |
+      | endpoint  | id      | statuscode |
       | locations | L173630 |        403 |
-
   # Scenario Outline: 03 Verify that a valid CPH number returns a successful response
   #   Given the user submits a CPH request with CPH number "<cphNumber>"
   #   When the request is processed by the system
@@ -36,13 +34,23 @@ Feature: (AIL-282) Locations endpoint tests
   #     | 02/082/0093 | PERMANENT |L128605|
   #     | 02/083/0024 | PERMANENT |L168737|
 
-#  Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
-#     Given the user submits "<endpoint>" "<id>" request
-#     When the request is processed by the system
-#     Then endpoint return unsuccessful response code "<statuscode>"
+  Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
+    Given the user submits "<endpoint>" "<id>" request
+    When the request is processed by the system
+    Then endpoint return unsuccessful response code "<statuscode>" "<msg>"
 
-#     Examples:
-#       | endpoint | id          | statuscode |
-#       | locations | 3333 |        404 |
+    Examples:
+      | endpoint  | id    | statuscode | msg                |
+      | locations | L1999 |        404 | Location not found |
 
+  @dev
+  Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid location number
+    Given the user submits "<endpoint>" "<id>" request
+    When the request is processed by the system
+    Then endpoint must return unsuccessful error response "<message>"
 
+    Examples:
+      | endpoint  | id        | message                                                                            |
+      | locations | L1531614s | "locationId" with value "L1531614s" fails to match the required pattern: /^L\\d+$/ |
+      # | locations |   2w/055/2422 | "countyId" with value "2w" fails to match the required pattern: /^\\d+$/                                                 |
+      # | locations | 02/055ss/0224 | "parishId" length must be 3 characters long. "parishId" with value "055ss" fails to match the required pattern: /^\\d+$/ |

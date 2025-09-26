@@ -1,4 +1,4 @@
-@dev
+@dev1
 Feature: (AIL-245) HOLDINGS endpoint tests
 
   Background:
@@ -36,14 +36,15 @@ Feature: (AIL-245) HOLDINGS endpoint tests
       | holdings | 02/082/0093 | PERMANENT | L128605  |
       | holdings | 02/083/0024 | PERMANENT | L168737  |
 
+ 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
     Given the user submits "<endpoint>" "<id>" request
     When the request is processed by the system
-    Then endpoint return unsuccessful response code "<statuscode>"
+    Then endpoint return unsuccessful response code "<statuscode>" "<msg>"
 
     Examples:
-      | endpoint | id          | statuscode |
-      | holdings | 02/055/0224 |        404 |
+      | endpoint | id          | statuscode | msg                           |
+      | holdings | 02/055/0224 |        404 | Holding not found or inactive |
 
   Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid CPH number
     Given the user submits "<endpoint>" "<id>" request

@@ -6,7 +6,9 @@ import {
   token,
   strProcessor,
   holdingsendpointKeys,
-  responseCodes
+  responseCodes,
+  methodNames,
+  locationsKeys
 } from '../utils/token'
 import axios from 'axios'
 import { expect } from 'chai'
@@ -219,9 +221,10 @@ Then(
     expect(verificatinStatus).to.equal(true)
   }
 )
+
 Then(
-  /^endpoint return unsuccessful response code (.+)$/,
-  async (statusCode) => {
+  'endpoint return unsuccessful response code {string} {string}',
+  async (statusCode, statusMsg) => {
     const actualResponse = response.data
     expect(response.status.toString()).to.equal(
       statusCode.replace(/['"]+/g, '')
@@ -240,9 +243,7 @@ Then(
       expect(actualResponse.code).to.equal(holdingsendpointKeys.DUPLCIATE_CODE)
       verificatinStatus = true
     } else {
-      expect(actualResponse.message).to.equal(
-        holdingsendpointKeys.HOLDING_NOT_FOUND
-      )
+      expect(actualResponse.message).to.equal(statusMsg)
       expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
       verificatinStatus = true
     }
@@ -252,8 +253,8 @@ Then(
 )
 
 Then(
-  /^endpoint must return unsuccessful error response (.+)$/,
-  async (expectedMessage) => {
+  'endpoint must return unsuccessful error response {string}',
+  async (endpoint, expectedMessage) => {
     const actualResponse = response.data
     expect(response.status).to.equal(responseCodes.badRequest)
     expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
@@ -266,19 +267,28 @@ Then(
       holdingsendpointKeys.BAD_REQUEST
     )
     const errorMeesage = actualResponse.errors[0]
+    // console.log("expectedMessage",expectedMessage)
+    const cleanedMessage = expectedMessage.replace(/^"|"$/g, '')
+    // console.log("cleanedMessage",cleanedMessage)
     expect(errorMeesage).to.have.property(holdingsendpointKeys.CODE)
     expect(errorMeesage).to.have.property(holdingsendpointKeys.MSG)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.COUNTYID)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.PARISHID)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.HOLDINGSID)
-    expect(errorMeesage.code).to.equal(holdingsendpointKeys.VALIDATION_ERROR)
-    const cleanedMessage = expectedMessage.replace(/^"|"$/g, '')
+    if (endpoint === methodNames.holdings) {
+      expect(errorMeesage).to.have.property(holdingsendpointKeys.COUNTYID)
+      expect(errorMeesage).to.have.property(holdingsendpointKeys.PARISHID)
+      expect(errorMeesage).to.have.property(holdingsendpointKeys.HOLDINGSID)
+      expect(errorMeesage.code).to.equal(holdingsendpointKeys.VALIDATION_ERROR)
+      const cpharray = id.split('/')
+      expect(errorMeesage.countyId).to.equal(cpharray[0])
+      expect(errorMeesage.parishId).to.equal(cpharray[1])
+      expect(errorMeesage.holdingId).to.equal(cpharray[2])
+    }
+    if (endpoint === methodNames.locations) {
+      expect(errorMeesage).to.have.property(locationsKeys.locationsId)
+      expect(errorMeesage.locationId).to.equal(id)
+    }
+
     expect(errorMeesage.message).to.equal(cleanedMessage)
     expect(actualResponse.errors.length).to.equal(1)
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
-    const cpharray = id.split('/')
-    expect(errorMeesage.countyId).to.equal(cpharray[0])
-    expect(errorMeesage.parishId).to.equal(cpharray[1])
-    expect(errorMeesage.holdingId).to.equal(cpharray[2])
   }
 )
