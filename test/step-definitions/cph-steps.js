@@ -13,7 +13,7 @@ import {
 
 import axios from 'axios'
 import { expect } from 'chai'
-import { expectedLocationDataFormat } from '../data/expected_locations_data_format'
+// import { expectedLocationDataFormat } from '../data/expected_locations_data_format'
 // import { appendFileSync } from 'fs'
 
 // const filePath = './output.txt'
