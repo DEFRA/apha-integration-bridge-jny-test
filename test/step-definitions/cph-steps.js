@@ -10,8 +10,10 @@ import {
   methodNames,
   locationsKeys
 } from '../utils/token'
+
 import axios from 'axios'
 import { expect } from 'chai'
+import { expectedLocationDataFormat } from '../data/expected_locations_data_format'
 // import { appendFileSync } from 'fs'
 
 // const filePath = './output.txt'
@@ -70,6 +72,7 @@ const tokenUrl = `https://apha-integration-bridge-${tokenEnv}.auth.eu-west-2.ama
 let tokenGen = ''
 let response = ''
 Given(/^the auth token$/, async () => {
+  locationKeys()
   tokenGen = await token(tokenUrl, clintId, secretId)
 })
 
@@ -253,8 +256,8 @@ Then(
 )
 
 Then(
-  'endpoint must return unsuccessful error response {string}',
-  async (endpoint, expectedMessage) => {
+  /^endpoint must return unsuccessful error response (.+)$/,
+  async (expectedMessage) => {
     const actualResponse = response.data
     expect(response.status).to.equal(responseCodes.badRequest)
     expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
@@ -292,3 +295,8 @@ Then(
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
   }
 )
+
+const locationKeys = (expectObj, actualObj) => {
+  // const jsonString = JSON.stringify(expectedLocationDataFormat)
+  // const keyCount = Object.keys(jsonString).length
+}

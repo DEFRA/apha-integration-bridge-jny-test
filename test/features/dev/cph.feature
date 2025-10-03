@@ -46,6 +46,7 @@ Feature: (AIL-245) HOLDINGS endpoint tests
       | endpoint | id          | statuscode | msg                           |
       | holdings | 02/055/0224 |        404 | Holding not found or inactive |
 
+
   Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid CPH number
     Given the user submits "<endpoint>" "<id>" request
     When the request is processed by the system
