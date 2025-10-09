@@ -1,4 +1,4 @@
-@dev1
+@dev
 Feature: (AIL-245) HOLDINGS endpoint tests
 
   Background:
