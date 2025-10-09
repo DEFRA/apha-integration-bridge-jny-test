@@ -16,22 +16,22 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
     client_secret: clientSecret
   })
 
-  const proxyUrl = new URL(process.env.HTTP_PROXY)
+  // const proxyUrl = new URL(process.env.HTTP_PROXY)
 
-  const proxyConfig = {
-    proxy: {
-      host: proxyUrl.hostname,
-      port: parseInt(proxyUrl.port),
-      protocol: proxyUrl.protocol.replace(':', '')
-    }
-  }
-  const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-    headers,
-    ...proxyConfig
-  })
+  // const proxyConfig = {
+  //   proxy: {
+  //     host: proxyUrl.hostname,
+  //     port: parseInt(proxyUrl.port),
+  //     protocol: proxyUrl.protocol.replace(':', '')
+  //   }
+  // }
   // const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-  //   headers
+  //   headers,
+  //   ...proxyConfig
   // })
+  const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
+    headers
+  })
 
   expect(response.status).to.equal(200)
   return response.data.access_token
@@ -75,6 +75,15 @@ export const holdingsendpointKeys = {
     'Duplicate Location resources found associated with given CPH number.',
   DUPLCIATE_CODE: 'DUPLICATE_RESOURCES_FOUND',
   ACCESS_DENIED: 'Access Denied'
+}
+
+export const locationsKeys = {
+  locationsId: 'locationId'
+}
+
+export const methodNames = {
+  holdings: 'holdings',
+  locations: 'locations'
 }
 // These are different API response codes
 export const responseCodes = {

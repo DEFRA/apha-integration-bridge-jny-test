@@ -6,10 +6,14 @@ import {
   token,
   strProcessor,
   holdingsendpointKeys,
-  responseCodes
+  responseCodes,
+  methodNames,
+  locationsKeys
 } from '../utils/token'
+
 import axios from 'axios'
 import { expect } from 'chai'
+// import { expectedLocationDataFormat } from '../data/expected_locations_data_format'
 // import { appendFileSync } from 'fs'
 
 // const filePath = './output.txt'
@@ -17,8 +21,9 @@ import { expect } from 'chai'
 const env = cucumberTag
 
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
-const expectedType = 'holdings'
-
+// const expectedType = 'holdings'
+let id = ''
+let endpoint = ''
 let clintId = ''
 let secretId = ''
 let tokenEnv = ''
@@ -66,20 +71,21 @@ const tokenUrl = `https://apha-integration-bridge-${tokenEnv}.auth.eu-west-2.ama
 
 let tokenGen = ''
 let response = ''
-let cleanStr = ''
 Given(/^the auth token$/, async () => {
+  locationKeys()
   tokenGen = await token(tokenUrl, clintId, secretId)
 })
 
 Given(
-  /^the user submits a CPH request with invalid token (.+)$/,
-  async function (cphNumber) {
-    cleanStr = strProcessor(cphNumber)
+  'the user submits {string} {string} request with invalid token',
+  async function (endpt, actualid) {
+    endpoint = strProcessor(endpt)
+    id = strProcessor(actualid)
 
     tokenGen = 'sss'
-    const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
+    const uri = `${baseUrl}/${endpoint}/${id}`
     try {
-      response = await axios.get(endpoint, {
+      response = await axios.get(uri, {
         headers: {
           Authorization: `Bearer ${tokenGen}`
         }
@@ -91,15 +97,16 @@ Given(
 )
 
 Given(
-  /^the user submits a CPH request with valid token but tampered (.+)$/,
-  async function (cphNumber) {
-    cleanStr = strProcessor(cphNumber)
+  'the user submits {string} {string} with valid token but tampered',
+  async function (endpt, actualid) {
+    endpoint = strProcessor(endpt)
+    id = strProcessor(actualid)
 
     tokenGen = await token(tokenUrl, clintId, secretId)
     tokenGen = tokenGen + 'a'
-    const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
+    const uri = `${baseUrl}/${endpoint}/${id}`
     try {
-      response = await axios.get(endpoint, {
+      response = await axios.get(uri, {
         headers: {
           Authorization: `Bearer ${tokenGen}`
         }
@@ -111,13 +118,14 @@ Given(
 )
 
 Given(
-  /^the user submits a CPH request with CPH number (.+)$/,
-  async function (cphNumber) {
-    cleanStr = strProcessor(cphNumber)
+  'the user submits {string} {string} request',
+  async function (endpt, actualid) {
+    endpoint = strProcessor(endpt)
+    id = strProcessor(actualid)
 
-    const endpoint = `${baseUrl}/${expectedType}/${cleanStr}`
+    const uri = `${baseUrl}/${endpoint}/${id}`
     try {
-      response = await axios.get(endpoint, {
+      response = await axios.get(uri, {
         headers: {
           Authorization: `Bearer ${tokenGen}`
         }
@@ -175,9 +183,9 @@ Then(
     )
 
     // Verifying that the API response includes type as 'holdings'
-    expect(cphResponseData.getType()).to.equal(expectedType)
+    expect(cphResponseData.getType()).to.equal(endpoint)
     // Verifying that the API response includes id with CPH number
-    expect(cphResponseData.getId()).to.equal(cleanStr)
+    expect(cphResponseData.getId()).to.equal(id)
     const expectedCphTypeValidation = expectedCphTypes.filter(
       (expectedType) =>
         expectedType.toUpperCase() ===
@@ -186,7 +194,7 @@ Then(
 
     // Get the link to the 'location' relationship
     const selfLink = cphResponseData.getSelfLink()
-    expect(selfLink).to.equal(`/holdings/${cphResponseData.getId()}`)
+    expect(selfLink).to.equal(`/${endpoint}/${cphResponseData.getId()}`)
     // Verifying that the API response includes only valid 'cphType' values: 'permanent', 'temporary', or 'emergency'
     expect(expectedCphTypeValidation).to.have.length.above(0)
     expect(cphResponseData.getCphType().toUpperCase()).to.equal(status)
@@ -216,9 +224,10 @@ Then(
     expect(verificatinStatus).to.equal(true)
   }
 )
+
 Then(
-  /^endpoint return unsuccessful response code (.+)$/,
-  async (statusCode) => {
+  'endpoint return unsuccessful response code {string} {string}',
+  async (statusCode, statusMsg) => {
     const actualResponse = response.data
     expect(response.status.toString()).to.equal(
       statusCode.replace(/['"]+/g, '')
@@ -237,9 +246,7 @@ Then(
       expect(actualResponse.code).to.equal(holdingsendpointKeys.DUPLCIATE_CODE)
       verificatinStatus = true
     } else {
-      expect(actualResponse.message).to.equal(
-        holdingsendpointKeys.HOLDING_NOT_FOUND
-      )
+      expect(actualResponse.message).to.equal(statusMsg)
       expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
       verificatinStatus = true
     }
@@ -263,19 +270,33 @@ Then(
       holdingsendpointKeys.BAD_REQUEST
     )
     const errorMeesage = actualResponse.errors[0]
+    // console.log("expectedMessage",expectedMessage)
+    const cleanedMessage = expectedMessage.replace(/^"|"$/g, '')
+    // console.log("cleanedMessage",cleanedMessage)
     expect(errorMeesage).to.have.property(holdingsendpointKeys.CODE)
     expect(errorMeesage).to.have.property(holdingsendpointKeys.MSG)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.COUNTYID)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.PARISHID)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.HOLDINGSID)
-    expect(errorMeesage.code).to.equal(holdingsendpointKeys.VALIDATION_ERROR)
-    const cleanedMessage = expectedMessage.replace(/^"|"$/g, '')
+    if (endpoint === methodNames.holdings) {
+      expect(errorMeesage).to.have.property(holdingsendpointKeys.COUNTYID)
+      expect(errorMeesage).to.have.property(holdingsendpointKeys.PARISHID)
+      expect(errorMeesage).to.have.property(holdingsendpointKeys.HOLDINGSID)
+      expect(errorMeesage.code).to.equal(holdingsendpointKeys.VALIDATION_ERROR)
+      const cpharray = id.split('/')
+      expect(errorMeesage.countyId).to.equal(cpharray[0])
+      expect(errorMeesage.parishId).to.equal(cpharray[1])
+      expect(errorMeesage.holdingId).to.equal(cpharray[2])
+    }
+    if (endpoint === methodNames.locations) {
+      expect(errorMeesage).to.have.property(locationsKeys.locationsId)
+      expect(errorMeesage.locationId).to.equal(id)
+    }
+
     expect(errorMeesage.message).to.equal(cleanedMessage)
     expect(actualResponse.errors.length).to.equal(1)
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
-    const cpharray = cleanStr.split('/')
-    expect(errorMeesage.countyId).to.equal(cpharray[0])
-    expect(errorMeesage.parishId).to.equal(cpharray[1])
-    expect(errorMeesage.holdingId).to.equal(cpharray[2])
   }
 )
+
+const locationKeys = (expectObj, actualObj) => {
+  // const jsonString = JSON.stringify(expectedLocationDataFormat)
+  // const keyCount = Object.keys(jsonString).length
+}
