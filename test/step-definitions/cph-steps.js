@@ -1,7 +1,7 @@
 import { Cph } from '../responseprocessor/cph'
 import { Given, When, Then } from '@cucumber/cucumber'
-// import { cucumberTag, config } from './../../wdio.conf'
-import { cucumberTag, config } from './../../wdio.local.conf'
+import { cucumberTag, config } from './../../wdio.conf'
+// import { cucumberTag, config } from './../../wdio.local.conf'
 import {
   token,
   strProcessor,
