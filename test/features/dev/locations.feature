@@ -22,14 +22,14 @@ Feature: (AIL-282) Locations endpoint tests
       | endpoint  | id      | statuscode |
       | locations | L173630 |        403 |
 
-  # # Scenario Outline: 03 Verify successful response from Locations endpoint when a valid location ID is provided
-  # #   Given the user submits "<endpoint>" "<id>" request
-  #   # When the request is processed by the system
-  #   # Then the API should return the details for the specified CPH number "<status>" "<location>"
+  Scenario Outline: 03 Verify successful response from Locations endpoint when a valid location ID is provided
+    Given the user submits "<endpoint>" "<id>" request
+    When the request is processed by the system
+    Then the API should return the location details
 
-  #   Examples:
-  #     | endpoint  | id      | status    | location |
-  #     | locations | L173630 | PERMANENT | L173630  |
+    Examples:
+      | endpoint  | id      |
+      | locations | L153161 |
 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent LocationId
     Given the user submits "<endpoint>" "<id>" request
@@ -41,7 +41,6 @@ Feature: (AIL-282) Locations endpoint tests
       | locations | L1999 |        404 | Location not found         |
       | locations |       |        404 | No route: [GET] /locations |
 
- 
   Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid location number
     Given the user submits "<endpoint>" "<id>" request
     When the request is processed by the system

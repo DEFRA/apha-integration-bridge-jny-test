@@ -21,22 +21,19 @@ Feature: (AIL-245) HOLDINGS endpoint tests
     Examples:
       | endpoint | id          | statuscode |
       | holdings | 02/055/0224 |        403 |
+  # Scenario Outline: 03 Verify that a valid CPH number returns a successful response
+  #   Given the user submits "<endpoint>" "<id>" request
+  #   When the request is processed by the system
+  #   Then the API should return the details for the specified CPH number "<status>" "<location>"
+  #   Examples:
+  #     | endpoint | id          | status    | location |
+  #     | holdings | 02/057/0003 | PERMANENT | L173630  |
+  #     | holdings | 02/057/0030 | PERMANENT | L130765  |
+  #     | holdings | 02/068/0010 | PERMANENT | L15077   |
+  #     | holdings | 02/081/0034 | PERMANENT | L126159  |
+  #     | holdings | 02/082/0093 | PERMANENT | L128605  |
+  #     | holdings | 02/083/0024 | PERMANENT | L168737  |
 
-  Scenario Outline: 03 Verify that a valid CPH number returns a successful response
-    Given the user submits "<endpoint>" "<id>" request
-    When the request is processed by the system
-    Then the API should return the details for the specified CPH number "<status>" "<location>"
-
-    Examples:
-      | endpoint | id          | status    | location |
-      | holdings | 02/057/0003 | PERMANENT | L173630  |
-      | holdings | 02/057/0030 | PERMANENT | L130765  |
-      | holdings | 02/068/0010 | PERMANENT | L15077   |
-      | holdings | 02/081/0034 | PERMANENT | L126159  |
-      | holdings | 02/082/0093 | PERMANENT | L128605  |
-      | holdings | 02/083/0024 | PERMANENT | L168737  |
-
- 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent CPH number
     Given the user submits "<endpoint>" "<id>" request
     When the request is processed by the system
@@ -45,7 +42,6 @@ Feature: (AIL-245) HOLDINGS endpoint tests
     Examples:
       | endpoint | id          | statuscode | msg                           |
       | holdings | 02/055/0224 |        404 | Holding not found or inactive |
-
 
   Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid CPH number
     Given the user submits "<endpoint>" "<id>" request

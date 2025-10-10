@@ -29,19 +29,13 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
   //   headers,
   //   ...proxyConfig
   // })
+
   const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
     headers
   })
 
   expect(response.status).to.equal(200)
   return response.data.access_token
-  // } catch (error) {
-  //   if (error.response) {
-  //     // The server responded with a status outside the 2xx range
-  //     // expect(error.response.status).to.equal(403)
-  //     // expect(error.response.data.error).to.equal('invalid_client')
-  //   }
-  // }
 }
 // this function helps to remove extra spaces of the data coming through feature file
 export const strProcessor = function (expectedCphNumber) {

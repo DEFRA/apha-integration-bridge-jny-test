@@ -1,7 +1,7 @@
 import { Cph } from '../responseprocessor/cph'
 import { Given, When, Then } from '@cucumber/cucumber'
-import { cucumberTag, config } from './../../wdio.conf'
-// import { cucumberTag, config } from './../../wdio.local.conf'
+// import { cucumberTag, config } from './../../wdio.conf'
+import { cucumberTag, config } from './../../wdio.local.conf'
 import {
   token,
   strProcessor,
@@ -13,15 +13,11 @@ import {
 
 import axios from 'axios'
 import { expect } from 'chai'
-// import { expectedLocationDataFormat } from '../data/expected_locations_data_format'
-// import { appendFileSync } from 'fs'
-
-// const filePath = './output.txt'
 
 const env = cucumberTag
 
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
-// const expectedType = 'holdings'
+
 let id = ''
 let endpoint = ''
 let clintId = ''
@@ -40,12 +36,6 @@ if (env === 'perf-test') {
   clintId = '4h02n8gviq2n8bf3kl60k3t5to'
   secretId = 'nhh2d5fusfcr5bcunove15227s1jr5tim8e95022qhniaqbjecj'
 }
-
-// const clintId1 = '5okrvdfifbgh0la867o1610gj22'
-// const secretId1 = '1cerfiie9ov0d1ic57qc9i9gespudo2fufnetp5buor2gscgmq8n2'
-
-// const perf_clintId1 = '4h02n8gviq2n8bf3kl60k3t5to'
-// const perf_secretId1 = 'nhh2d5fusfcr5bcunove15227s1jr5tim8e95022qhniaqbjecj'
 
 if (env === 'test') {
   tokenEnv = '6bf3a'
@@ -72,7 +62,6 @@ const tokenUrl = `https://apha-integration-bridge-${tokenEnv}.auth.eu-west-2.ama
 let tokenGen = ''
 let response = ''
 Given(/^the auth token$/, async () => {
-  locationKeys()
   tokenGen = await token(tokenUrl, clintId, secretId)
 })
 
@@ -142,6 +131,9 @@ When(/^the request is processed by the system$/, async function () {
   expect(response).to.not.equal(undefined)
 })
 
+Then(/^the API should return the location details$/, async function () {
+  expect(response.status).to.equal(responseCodes.ok)
+})
 Then(
   /^the API should return the details for the specified CPH number (.+) (.+)$/,
   async function (expectedCpStatus, expectedLocationID) {
@@ -295,8 +287,3 @@ Then(
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
   }
 )
-
-const locationKeys = (expectObj, actualObj) => {
-  // const jsonString = JSON.stringify(expectedLocationDataFormat)
-  // const keyCount = Object.keys(jsonString).length
-}
