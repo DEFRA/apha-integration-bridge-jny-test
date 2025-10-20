@@ -37,7 +37,7 @@ export const config = {
 
   // Tests to run
   // Tests to run
-  specs: [],
+  specs: ['./test/features/**/*.feature'],
   cucumberOpts: {
     require: ['./test/step-definitions/*.js'],
     format: ['pretty', 'progress', 'summary'],

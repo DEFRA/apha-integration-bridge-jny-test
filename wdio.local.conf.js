@@ -29,7 +29,6 @@ const overrides = {
   isLocal: true,
   injectGlobals: false,
 
-  specs: ['./test/features/**/*.feature'],
   exclude: [],
 
   automationProtocol: 'webdriver',
