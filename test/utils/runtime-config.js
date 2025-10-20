@@ -1,10 +1,5 @@
 import { Cph } from '../responseprocessor/cph'
 import { Given, When, Then } from '@cucumber/cucumber'
-import axios from 'axios'
-import { expect } from 'chai'
-
-import { cfg, makeUri } from '../../config/properties.js'
-
 import {
   token,
   strProcessor,
@@ -13,17 +8,26 @@ import {
   methodNames,
   locationsKeys
 } from '../utils/token'
+import { getRuntimeConfig } from '../utils/runtime-config'
 
-const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
+import axios from 'axios'
+import { expect } from 'chai'
 
-const expectedCphTypes = ['permanent', 'temporary', 'emergency']
+// Pull values from the active WDIO config at runtime
+const { baseUrl, cucumberTag: env } = getRuntimeConfig()
 
-let id = ''
-let endpoint = ''
-let tokenGen = ''
-let response = ''
+// Helper: safely make endpoint URLs from base + path segments
+function makeUri(base, ...segments) {
+  const clean = segments
+    .filter((s) => s !== undefined && s !== null)
+    .map((s) => String(s).trim())
+    .filter((s) => s.length > 0)
+    .join('/')
+  const rel = clean.length ? `/${clean}` : '/'
+  return new URL(rel, base).toString()
+}
 
+// Helper: normalise axios errors without a response (network/DNS/TLS/proxy/timeout)
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
   return {
@@ -40,6 +44,57 @@ function toResponseLike(error, uri) {
     }
   }
 }
+
+const expectedCphTypes = ['permanent', 'temporary', 'emergency']
+
+let id = ''
+let endpoint = ''
+let clintId = ''
+let secretId = ''
+let tokenEnv = ''
+
+// Map env -> Cognito app credentials + token subdomain suffix
+const cfgByEnv = {
+  dev: {
+    tokenEnv: 'c63f2',
+    clientId: '5okrvdfifbgh0la867o1610gj2',
+    secretId: '1cerfiie9ov0d1ic57qc9i9gespudo2fufnetp5buor2gscgmq8n'
+  },
+  'perf-test': {
+    tokenEnv: '05244',
+    clientId: '4h02n8gviq2n8bf3kl60k3t5to',
+    secretId: 'nhh2d5fusfcr5bcunove15227s1jr5tim8e95022qhniaqbjecj'
+  },
+  test: {
+    tokenEnv: '6bf3a',
+    clientId: '4sfks8pcsc8s7bt6dti6nh4clc',
+    secretId: '17rc1dh65mqcfpue4fqngri19va0orasgkt68c6c05u8h0rhf3ie'
+  },
+  'test-ext': {
+    tokenEnv: '8ec5c',
+    clientId: '3bg39mg39v27fd8qqlnuvfcsp0',
+    secretId: 'vdbpuomlv3bg4vn671d277suortfvuiea4972qiuaircparke4o'
+  },
+  prod: {
+    tokenEnv: '', // prod may use a different base (left blank on purpose)
+    clientId: '2h4roit5vp047ie7tgs3ha2nbl',
+    secretId: '5ljfia3htcslrcvfi3pnbqftjqrvofj29ohe1vb3us2dge50k5i'
+  }
+}
+
+{
+  const picked = cfgByEnv[env] ?? {}
+  tokenEnv = picked.tokenEnv ?? ''
+  clintId = picked.clientId ?? ''
+  secretId = picked.secretId ?? ''
+}
+
+const tokenUrl = tokenEnv
+  ? `https://apha-integration-bridge-${tokenEnv}.auth.eu-west-2.amazoncognito.com`
+  : `https://apha-integration-bridge.auth.eu-west-2.amazoncognito.com` // fallback for prod if needed
+
+let tokenGen = ''
+let response = ''
 
 // ===== Given steps =====
 
@@ -114,7 +169,7 @@ When(/^the request is processed by the system$/, async function () {
     throw new Error('No response captured at all (unexpected).')
   }
   if (response.status === 0) {
-    // eslint-disable-next-line no-console
+    // Surface immediate diagnostics
     console.error(
       `[NETWORK] Failed to reach API. baseUrl=${baseUrl}, endpoint=${endpoint}, id=${id}\n` +
         `URI: ${response.data?.uri}\n` +
@@ -124,6 +179,8 @@ When(/^the request is processed by the system$/, async function () {
   expect(response).to.not.equal(null)
   expect(response).to.not.equal(undefined)
 })
+
+// ===== Then steps =====
 
 Then(/^the API should return the location details$/, async function () {
   if (response.status === 0) {
@@ -241,7 +298,7 @@ Then(
         cphResponseData.getCphType().toUpperCase()
     )
 
-    // Get the link to the 'location' relationship
+    // Get the self link
     const selfLink = cphResponseData.getSelfLink()
     expect(selfLink).to.equal(`/${endpoint}/${cphResponseData.getId()}`)
     // Verifying that the API response includes only valid 'cphType' values

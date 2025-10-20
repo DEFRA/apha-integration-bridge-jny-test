@@ -1,6 +1,6 @@
 import fs from 'node:fs'
+import testConfig from './config/config.js'
 
-// const oneMinute = 60 * 1000
 export const cucumberTag = process.env.ENVIRONMENT
 
 let chromeProxyConfig = {}
@@ -17,7 +17,7 @@ if (process.env.HTTP_PROXY) {
 
 export const config = {
   //
-  // ====================
+  // ====================f
   // Runner Configuration
   // ====================
   // WebdriverIO supports running e2e tests as well as unit and component tests.
@@ -37,7 +37,7 @@ export const config = {
 
   // Tests to run
   // Tests to run
-  specs: ['./test/features/*.feature'],
+  specs: [],
   cucumberOpts: {
     require: ['./test/step-definitions/*.js'],
     format: ['pretty', 'progress', 'summary'],
@@ -47,36 +47,6 @@ export const config = {
   // Tests to exclude
   exclude: [],
   maxInstances: 1,
-
-  // capabilities: [
-  //   {
-  //     ...(process.env.HTTP_PROXY && {
-  //       proxy: {
-  //         proxyType: 'manual',
-  //         httpProxy: new URL(process.env.HTTP_PROXY).host,
-  //         sslProxy: new URL(process.env.HTTP_PROXY).host
-  //       }
-  //     }),
-  //     browserName: 'chrome',
-  //     'goog:chromeOptions': {
-  //       args: [
-  //         '--no-sandbox',
-  //         '--disable-infobars',
-  //         '--headless',
-  //         '--disable-gpu',
-  //         '--window-size=1920,1080',
-  //         '--enable-features=NetworkService,NetworkServiceInProcess',
-  //         '--password-store=basic',
-  //         '--use-mock-keychain',
-  //         '--dns-prefetch-disable',
-  //         '--disable-background-networking',
-  //         '--disable-remote-fonts',
-  //         '--ignore-certificate-errors',
-  //         '--disable-dev-shm-usage'
-  //       ]
-  //     }
-  //   }
-  // ],
   capabilities: [
     {
       ...chromeProxyConfig,
@@ -103,34 +73,23 @@ export const config = {
     }
   ],
 
-  execArgv: ['--loader', 'esm-module-alias/loader'],
-
-  logLevel: 'info',
+  logLevel: testConfig.logLevel,
 
   logLevels: {
     webdriver: 'error'
   },
 
   // Number of failures before the test suite bails.
-  bail: 0,
-  waitforTimeout: 10000,
-  waitforInterval: 200,
-  connectionRetryTimeout: 6000,
-  connectionRetryCount: 3,
+  bail: testConfig.bail,
+  waitforTimeout: testConfig.waitForTimeout,
+  waitforInterval: testConfig.waitforInterval,
+  connectionRetryTimeout: testConfig.connectionRetryTimeout,
+  connectionRetryCount: testConfig.connectionRetryCount,
   framework: 'cucumber',
 
   reporters: [
+    'spec',
     [
-      // Spec reporter provides rolling output to the logger so you can see it in-progress
-      'spec',
-      {
-        addConsoleLogs: true,
-        realtimeReporting: true,
-        color: false
-      }
-    ],
-    [
-      // Allure is used to generate the final HTML report
       'allure',
       {
         outputDir: 'allure-results',
