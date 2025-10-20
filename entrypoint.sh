@@ -1,7 +1,13 @@
 #!/bin/sh
 
 echo "run_id: $RUN_ID"
-npm test
+
+# Prefer lowercase `environment`, fall back to `ENVIRONMENT`
+ENV_VALUE="${environment:-${ENVIRONMENT:-}}"
+echo "environment: ${ENV_VALUE:-unset}"
+
+# Make it available to Node as process.env.environment
+environment="$ENV_VALUE" npm test
 
 npm run report:publish
 publish_exit_code=$?
