@@ -104,7 +104,16 @@ export const config = {
   connectionRetryTimeout: testConfig.connectionRetryTimeout,
   connectionRetryCount: testConfig.connectionRetryCount,
 
-  services: [['chromedriver', {}]],
+  services: [
+    [
+      'chromedriver',
+      {
+        args: ['--whitelisted-ips='],
+        logFileName: 'wdio-chromedriver.log',
+        outputDir: '.'
+      }
+    ]
+  ],
   // Reporters
   reporters: [
     'spec',
