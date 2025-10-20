@@ -169,7 +169,7 @@ When(/^the request is processed by the system$/, async function () {
     throw new Error('No response captured at all (unexpected).')
   }
   if (response.status === 0) {
-    // Surface immediate diagnostics
+    // eslint-disable-next-line no-console
     console.error(
       `[NETWORK] Failed to reach API. baseUrl=${baseUrl}, endpoint=${endpoint}, id=${id}\n` +
         `URI: ${response.data?.uri}\n` +
