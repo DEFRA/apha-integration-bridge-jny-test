@@ -7,7 +7,7 @@ ENV_VALUE="${environment:-${ENVIRONMENT:-}}"
 echo "environment: ${ENV_VALUE:-unset}"
 
 # Make it available to Node as process.env.environment
-environment="$ENV_VALUE" npm test:portal
+environment="$ENV_VALUE" npm run test:portal
 
 npm run report:publish
 publish_exit_code=$?
