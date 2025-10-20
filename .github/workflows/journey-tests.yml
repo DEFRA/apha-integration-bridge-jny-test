@@ -3,13 +3,79 @@ name: Run Journey Tests on GitHub
 permissions:
   checks: write
   pull-requests: write
+  contents: read
 
 on:
   workflow_dispatch:
-  workflow_call:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - perf-test
+          - prod
+        default: dev
+      debug:
+        description: "Enable DEBUG logging"
+        required: false
+        type: boolean
+        default: false
+
 jobs:
   build:
-    name: Run Journey Tests
+    name: Run Journey Tests (${{ inputs.environment }})
     runs-on: ubuntu-latest
+
+    env:
+      # pass the chosen env into your WDIO/deepmerge setup
+      ENV_NAME: ${{ inputs.environment }}
+      CUCUMBER_TAGS: ${{ inputs.environment }}
+      DEBUG: ${{ inputs.debug && '1' || '' }}
+      CI: true
+
     steps:
-      - uses: DEFRA/cdp-node-journey-test-suite-template/run-journey-tests@main
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java (for allure-commandline)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Google Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (npm run test:local)
+        run: npm run test:local
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ inputs.environment }}
+          path: allure-results
+          if-no-files-found: ignore
+
+      - name: Generate Allure report
+        if: always()
+        run: npx allure-commandline generate allure-results --clean -o allure-report
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ inputs.environment }}
+          path: allure-report
+          if-no-files-found: ignore

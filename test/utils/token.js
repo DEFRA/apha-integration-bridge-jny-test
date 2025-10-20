@@ -16,27 +16,34 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
     client_secret: clientSecret
   })
 
-  const proxyUrl = new URL(process.env.HTTP_PROXY)
+  // Decide local vs non-local based on WDIO config
+  const isLocal = Boolean(global.browser?.config?.isLocal)
 
-  const proxyConfig = {
-    proxy: {
+  // Build axios config
+  const axiosConfig = { headers }
+
+  // Only apply proxy when not local and HTTP_PROXY is present
+  if (!isLocal && process.env.HTTP_PROXY) {
+    const proxyUrl = new URL(process.env.HTTP_PROXY.trim())
+    axiosConfig.proxy = {
       host: proxyUrl.hostname,
-      port: parseInt(proxyUrl.port),
+      port: parseInt(
+        proxyUrl.port || (proxyUrl.protocol === 'https:' ? '443' : '80'),
+        10
+      ),
       protocol: proxyUrl.protocol.replace(':', '')
     }
   }
-  const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-    headers,
-    ...proxyConfig
-  })
 
-  // const response = await axios.post(`${tokenUrl}/oauth2/token`, payload, {
-  //   headers
-  // })
+  // Normalise to avoid double slashes if tokenUrl already ends with '/'
+  const tokenEndpoint = `${String(tokenUrl).replace(/\/+$/, '')}/oauth2/token`
+
+  const response = await axios.post(tokenEndpoint, payload, axiosConfig)
 
   expect(response.status).to.equal(200)
   return response.data.access_token
 }
+
 // this function helps to remove extra spaces of the data coming through feature file
 export const strProcessor = function (expectedCphNumber) {
   const encodedStr = expectedCphNumber
@@ -79,6 +86,7 @@ export const methodNames = {
   holdings: 'holdings',
   locations: 'locations'
 }
+
 // These are different API response codes
 export const responseCodes = {
   ok: 200,
