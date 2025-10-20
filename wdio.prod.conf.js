@@ -1,4 +1,3 @@
-// wdio.local.conf.js
 import merge from 'deepmerge'
 import { config as base } from './wdio.conf.js'
 import allure from 'allure-commandline'
@@ -6,14 +5,7 @@ import allure from 'allure-commandline'
 const debug = !!process.env.DEBUG
 const oneMinute = 60 * 1000
 
-const resolvedTag =
-  (process.env.CUCUMBER_TAGS &&
-    process.env.CUCUMBER_TAGS.trim().replace(/^@?/, '')) ||
-  (process.env.ENV_NAME && process.env.ENV_NAME.trim()) ||
-  (process.env.ENVIRONMENT && process.env.ENVIRONMENT.trim()) ||
-  'dev'
-
-export const cucumberTag = resolvedTag
+export const cucumberTag = 'prod'
 
 const overwriteArrayMerge = (_dst, src) => src
 const normalizeReporters = (rpts) =>
@@ -29,10 +21,11 @@ const overrides = {
   isLocal: true,
   injectGlobals: false,
 
+  specs: ['./test/features/prod/*.feature'],
+  baseUrl: 'https://apha-integration-bridge.api.cdp-int.defra.cloud',
+
   exclude: [],
-
   automationProtocol: 'webdriver',
-
   maxInstances: 1,
 
   capabilities: debug
@@ -55,12 +48,12 @@ const overrides = {
 
   cucumberOpts: {
     ...(base.cucumberOpts || {}),
-    tags: [`@${cucumberTag}`]
+    tags: ['@prod']
   },
 
   reporters: normalizeReporters(base.reporters),
 
-  onComplete(exitCode, config, capabilities, results) {
+  onComplete(_exitCode, _config, _capabilities, _results) {
     const reportError = new Error('Could not generate Allure report')
     const generation = allure([
       'generate',
@@ -86,9 +79,5 @@ delete merged.hostname
 delete merged.port
 delete merged.path
 delete merged.protocol
-
-if (!merged.baseUrl || /\.undefined\./.test(String(merged.baseUrl))) {
-  merged.baseUrl = 'https://apha-integration-bridge.api.dev.cdp-int.defra.cloud'
-}
 
 export const config = merged
