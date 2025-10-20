@@ -8,7 +8,7 @@ const ENV_DEFAULT = 'dev'
 const COGNITO_REGION = 'eu-west-2'
 const COGNITO_BASE = `auth.${COGNITO_REGION}.amazoncognito.com`
 
-const pickEnvConfig = (name) => {
+function pickEnvConfig(name) {
   const map = {
     local,
     dev,
@@ -19,7 +19,7 @@ const pickEnvConfig = (name) => {
   return map[name] || map[ENV_DEFAULT]
 }
 
-const normaliseBaseUrl = (raw) => {
+function normaliseBaseUrl(raw) {
   const s = String(raw ?? '').trim()
   if (!s) return ''
   let u
@@ -34,20 +34,20 @@ const normaliseBaseUrl = (raw) => {
   return u.toString()
 }
 
-const buildTokenUrl = ({ tokenEnv }) => {
+function buildTokenUrl({ tokenEnv }) {
   const override =
     process.env.COGNITO_DOMAIN && String(process.env.COGNITO_DOMAIN).trim()
   if (override) {
     const url = new URL(override)
     return `${url.origin}`
   }
-  return tokenEnv
-    ? `https://apha-integration-bridge-${tokenEnv}.${COGNITO_BASE}`
-    : `https://apha-integration-bridge.${COGNITO_BASE}`
+  if (tokenEnv) {
+    return `https://apha-integration-bridge-${tokenEnv}.${COGNITO_BASE}`
+  }
+  return `https://apha-integration-bridge.${COGNITO_BASE}`
 }
 
-// Safe URI builder for API paths
-export const makeUri = (base, ...segments) => {
+export function makeUri(base, ...segments) {
   const clean = segments
     .filter((s) => s !== undefined && s !== null)
     .map((s) => String(s).trim())
@@ -61,7 +61,7 @@ class Properties {
   constructor() {
     const wdioCfg = global.browser?.config ?? {}
 
-    // Determine env name priority: ENV_NAME > WDIO cucumberTag > default
+    // Determine env name
     const envName =
       (process.env.ENV_NAME && String(process.env.ENV_NAME)) ||
       (wdioCfg.cucumberTag && String(wdioCfg.cucumberTag)) ||
@@ -69,17 +69,17 @@ class Properties {
 
     const picked = pickEnvConfig(envName)
 
-    // Base URL priority: env file > WDIO > env var
-    const baseUrl = normaliseBaseUrl(
+    // Choose baseUrl with priority: env file -> WDIO -> BASE_URL
+    const baseUrlCandidate =
       picked.baseUrl ?? wdioCfg.baseUrl ?? process.env.BASE_URL
-    )
+
+    const baseUrl = normaliseBaseUrl(baseUrlCandidate)
     if (!baseUrl) {
       throw new Error(
         'Missing baseUrl. Set it in your env file, WDIO config.baseUrl, or BASE_URL env.'
       )
     }
 
-    // Allow overrides via CI
     const clientId = (
       process.env.COGNITO_CLIENT_ID ||
       picked.clientId ||
@@ -91,20 +91,24 @@ class Properties {
       ''
     ).trim()
 
+    const tokenUrl = buildTokenUrl(picked)
+
     this.config = {
       envName,
       isLocal: Boolean(wdioCfg.isLocal ?? process.env.IS_LOCAL === 'true'),
       baseUrl,
       cognito: {
         tokenEnv: picked.tokenEnv ?? '',
-        tokenUrl: buildTokenUrl(picked),
+        tokenUrl,
         clientId,
         clientSecret
       }
     }
   }
 
-  getConfig = () => this.config
+  getConfig() {
+    return this.config
+  }
 }
 
 const properties = new Properties()
