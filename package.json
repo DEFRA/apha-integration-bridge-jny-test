@@ -16,7 +16,7 @@
   "scripts": {
     "clean": "rm -rf allure-results && rm -rf allure-report",
     "test": "npm run clean && wdio run wdio.${environment}.conf.js",
-    "test:portal": "node ./bin/run-wdio.mjs",
+    "test:portal": "node ./bin/run-wdio.mjs | tee wdio-spec-output.txt",
     "format": "prettier --write 'test/**/*.js' '**/*.{js,md,json,config.js}'",
     "format:check": "prettier --check 'test/**/*.js' '**/*.{js,md,json,config.js}'",
     "git:pre-commit-hook": "npm run format:check && npm run lint",
@@ -24,8 +24,8 @@
     "lint:fix": "eslint . --fix",
     "postinstall": "npm run setup:husky",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
-    "report": "allure generate allure-results --single-file --clean",
-    "report:publish": "npm run report && ./bin/publish-tests.sh"
+    "report": "test -d allure-results && allure generate allure-results --single-file --clean || echo \"[report] no allure-results; skipping generation\"",
+    "report:publish": "./bin/publish-spec-results.sh"
   },
   "dependencies": {
     "@wdio/allure-reporter": "9.9.0",
