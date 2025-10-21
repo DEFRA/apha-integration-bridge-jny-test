@@ -15,6 +15,7 @@
   },
   "scripts": {
     "clean": "rm -rf allure-results && rm -rf allure-report",
+    "test": "npm run clean && wdio run wdio.conf.js",
     "test:dev": "npm run clean && wdio run wdio.dev.conf.js",
     "test:test": "npm run clean && wdio run wdio.test.conf.js",
     "test:perf": "npm run clean && wdio run wdio.perf.conf.js",

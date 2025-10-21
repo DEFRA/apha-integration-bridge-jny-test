@@ -11,8 +11,8 @@ echo "environment: ${ENV_VALUE}"
 export environment="${ENV_VALUE}"
 
 # Run the env-specific script, e.g. test:dev
-echo "running: npm run test:${ENV_VALUE}"
-npm run "test:${ENV_VALUE}"
+echo "running: environment=dev npm test"
+environment=dev npm test
 
 # Publish report
 npm run report:publish

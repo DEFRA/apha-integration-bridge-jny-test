@@ -1,9 +1,7 @@
 import merge from 'deepmerge'
 import { config as base } from './wdio.conf.js'
-import allure from 'allure-commandline'
 
 const debug = !!process.env.DEBUG
-const oneMinute = 60 * 1000
 
 export const cucumberTag = 'dev'
 
@@ -51,26 +49,7 @@ const overrides = {
     tags: ['@dev']
   },
 
-  reporters: normalizeReporters(base.reporters),
-
-  onComplete(_exitCode, _config, _capabilities, _results) {
-    const reportError = new Error('Could not generate Allure report')
-    const generation = allure([
-      'generate',
-      'allure-results',
-      '--clean',
-      '--name',
-      `APHA-Test-Results-on-environment-${cucumberTag}`
-    ])
-    return new Promise((resolve, reject) => {
-      const generationTimeout = setTimeout(() => reject(reportError), oneMinute)
-      generation.on('exit', (code) => {
-        clearTimeout(generationTimeout)
-        if (code !== 0) return reject(reportError)
-        resolve()
-      })
-    })
-  }
+  reporters: normalizeReporters(base.reporters)
 }
 
 const merged = merge(base, overrides, { arrayMerge: overwriteArrayMerge })

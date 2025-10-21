@@ -1,7 +1,9 @@
 import fs from 'node:fs'
 import testConfig from './config/config.js'
+import allure from 'allure-commandline'
 
 export const cucumberTag = process.env.ENVIRONMENT
+const oneMinute = 60 * 1000
 
 let chromeProxyConfig = {}
 if (process.env.HTTP_PROXY) {
@@ -86,7 +88,7 @@ export const config = {
   connectionRetryTimeout: testConfig.connectionRetryTimeout,
   connectionRetryCount: testConfig.connectionRetryCount,
   framework: 'cucumber',
-
+  execArgv: ['--loader', 'esm-module-alias/loader'],
   reporters: [
     'spec',
     [
@@ -245,7 +247,25 @@ export const config = {
     if (results?.failed && results.failed > 0) {
       fs.writeFileSync('FAILED', JSON.stringify(results))
     }
+
+    const reportError = new Error('Could not generate Allure report')
+    const generation = allure([
+      'generate',
+      'allure-results',
+      '--clean',
+      '--name',
+      `APHA-Test-Results-on-environment-${cucumberTag}`
+    ])
+    return new Promise((resolve, reject) => {
+      const generationTimeout = setTimeout(() => reject(reportError), oneMinute)
+      generation.on('exit', (code) => {
+        clearTimeout(generationTimeout)
+        if (code !== 0) return reject(reportError)
+        resolve()
+      })
+    })
   }
+
   /**
    * Gets executed when a refresh happens.
    * @param {string} oldSessionId session ID of the old session
