@@ -16,7 +16,7 @@
   "scripts": {
     "clean": "rm -rf allure-results && rm -rf allure-report",
     "test": "npm run clean && wdio run wdio.${environment}.conf.js",
-    "test:portal": "npm run clean && wdio run wdio.%environment%.conf.js",
+    "test:portal": "node --input-type=module ./bin/run-wdio.mjs",
     "format": "prettier --write 'test/**/*.js' '**/*.{js,md,json,config.js}'",
     "format:check": "prettier --check 'test/**/*.js' '**/*.{js,md,json,config.js}'",
     "git:pre-commit-hook": "npm run format:check && npm run lint",
