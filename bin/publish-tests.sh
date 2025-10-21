@@ -1,38 +1,33 @@
-#!/usr/bin/env sh
-set -euxo pipefail
+#!/bin/sh
+set -u
 
-DIR="$PWD/allure-report"
-INDEX="$DIR/index.html"
+DIRECTORY="$PWD/allure-report"
+echo "[publish] REPORT DIR: $DIRECTORY"
 
-echo "[publish] Starting publish of Allure site"
-echo "[publish] DIR=$DIR"
-echo "[publish] INDEX=$INDEX"
+echo "[publish] RESULTS_OUTPUT_S3_PATH: ${RESULTS_OUTPUT_S3_PATH:-unset}"
 
-# 1) Ensure site exists locally
-if [ ! -f "$INDEX" ]; then
-  echo "[publish] ERROR: $INDEX not found (Allure site wasn’t generated)"
-  exit 1
-fi
+echo "[publish] Publishing test results to S3…"
 
-# 2) Ensure destination is set
 if [ -z "${RESULTS_OUTPUT_S3_PATH:-}" ]; then
-  echo "[publish] ERROR: RESULTS_OUTPUT_S3_PATH is not set"
+  echo "[publish] RESULTS_OUTPUT_S3_PATH is not set"
   exit 1
 fi
 
-# 3) Normalise trailing slash on S3 prefix
-case "$RESULTS_OUTPUT_S3_PATH" in
-  */) DEST="$RESULTS_OUTPUT_S3_PATH" ;;
-  *)  DEST="$RESULTS_OUTPUT_S3_PATH/";;
-esac
-echo "[publish] DEST=$DEST"
+if [ ! -d "$DIRECTORY" ]; then
+  echo "[publish] $DIRECTORY is not found"
+  exit 1
+fi
 
-# 4) Upload whole folder so relative links work
-aws s3 sync "$DIR" "$DEST" --quiet
-echo "[publish] Upload complete"
+# Upload
+aws s3 cp --quiet "$DIRECTORY" "$RESULTS_OUTPUT_S3_PATH" --recursive
 
-# 5) Verify the exact key the portal expects
-echo "[publish] Verifying ${DEST}index.html exists"
-aws s3 ls "${DEST}index.html" >/dev/null 2>&1
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "[publish] aws s3 cp failed with exit code $rc"
+  exit "$rc"
+fi
 
-echo "[publish] OK: Allure published to ${DEST}"
+echo "[publish] Test results published to $RESULTS_OUTPUT_S3_PATH"
+
+# Optional: list the key we just wrote
+aws s3 ls "$RESULTS_OUTPUT_S3_PATH" || true
