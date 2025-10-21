@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import testConfig from './config/config.js'
-import allure from 'allure-commandline'
+// import allure from 'allure-commandline'
 
 export const cucumberTag = process.env.ENVIRONMENT
-const oneMinute = 60 * 1000
+// const oneMinute = 60 * 1000
 
 let chromeProxyConfig = {}
 if (process.env.HTTP_PROXY) {
@@ -248,22 +248,22 @@ export const config = {
       fs.writeFileSync('FAILED', JSON.stringify(results))
     }
 
-    const reportError = new Error('Could not generate Allure report')
-    const generation = allure([
-      'generate',
-      'allure-results',
-      '--clean',
-      '--name',
-      `APHA-Test-Results-on-environment-${cucumberTag}`
-    ])
-    return new Promise((resolve, reject) => {
-      const generationTimeout = setTimeout(() => reject(reportError), oneMinute)
-      generation.on('exit', (code) => {
-        clearTimeout(generationTimeout)
-        if (code !== 0) return reject(reportError)
-        resolve()
-      })
-    })
+    // const reportError = new Error('Could not generate Allure report')
+    // const generation = allure([
+    //   'generate',
+    //   'allure-results',
+    //   '--clean',
+    //   '--name',
+    //   `APHA-Test-Results-on-environment-${cucumberTag}`
+    // ])
+    // return new Promise((resolve, reject) => {
+    //   const generationTimeout = setTimeout(() => reject(reportError), oneMinute)
+    //   generation.on('exit', (code) => {
+    //     clearTimeout(generationTimeout)
+    //     if (code !== 0) return reject(reportError)
+    //     resolve()
+    //   })
+    // })
   }
 
   /**
