@@ -97,8 +97,7 @@ export const config = {
         disableWebdriverScreenshotsReporting: true,
         useCucumberStepReporter: true
       }
-    ],
-    ['json', { outputDir: './json-results' }]
+    ]
   ],
 
   // Options to be passed to Mocha.
