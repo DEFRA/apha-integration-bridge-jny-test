@@ -17,7 +17,9 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
   })
 
   // Decide local vs non-local based on WDIO config
-  const isLocal = Boolean(global.browser?.config?.isLocal)
+  const isLocal = /^(1|true|yes)$/i.test(
+    String(process.env.IS_LOCAL || '').trim()
+  )
 
   // Build axios config
   const axiosConfig = { headers }

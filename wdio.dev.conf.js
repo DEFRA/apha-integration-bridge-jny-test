@@ -6,17 +6,8 @@ const debug = !!process.env.DEBUG
 export const cucumberTag = 'dev'
 
 const overwriteArrayMerge = (_dst, src) => src
-const normalizeReporters = (rpts) =>
-  Array.isArray(rpts)
-    ? rpts.map((r) =>
-        Array.isArray(r) && r.length === 1 && typeof r[0] === 'string'
-          ? r[0]
-          : r
-      )
-    : rpts
 
 const overrides = {
-  isLocal: true,
   injectGlobals: false,
 
   specs: ['./test/features/dev/*.feature'],
@@ -47,9 +38,7 @@ const overrides = {
   cucumberOpts: {
     ...(base.cucumberOpts || {}),
     tags: ['@dev']
-  },
-
-  reporters: normalizeReporters(base.reporters)
+  }
 }
 
 const merged = merge(base, overrides, { arrayMerge: overwriteArrayMerge })
