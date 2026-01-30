@@ -1,295 +1,62 @@
-import { Cph } from '../responseprocessor/cph'
-import { Given, When, Then } from '@cucumber/cucumber'
-import axios from 'axios'
+import { Then } from '@cucumber/cucumber'
 import { expect } from 'chai'
 
-import { cfg, makeUri } from '../../config/properties.js'
-
+import { Cph } from '../responseprocessor/cph'
 import {
-  token,
   strProcessor,
   holdingsendpointKeys,
-  responseCodes,
-  methodNames,
-  locationsKeys
+  responseCodes
 } from '../utils/token'
 
-const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
-
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
-
-let id = ''
-let endpoint = ''
-let tokenGen = ''
-let response = ''
-
-function toResponseLike(error, uri) {
-  if (error?.response) return error.response
-  return {
-    status: 0,
-    data: {
-      code: 'NETWORK_ERROR',
-      message: error?.message || 'Network error with no HTTP response',
-      uri,
-      axiosError: {
-        isAxiosError: !!error?.isAxiosError,
-        cause: String(error?.cause || ''),
-        name: error?.name
-      }
-    }
-  }
-}
-
-// ===== Given steps =====
-
-Given(/^the auth token$/, async () => {
-  tokenGen = await token(tokenUrl, clintId, secretId)
-})
-
-Given(
-  'the user submits {string} {string} request with invalid token',
-  async function (endpt, actualid) {
-    endpoint = strProcessor(endpt)
-    id = strProcessor(actualid)
-
-    tokenGen = 'sss'
-    const uri = makeUri(baseUrl, endpoint, id)
-    try {
-      response = await axios.get(uri, {
-        headers: {
-          Authorization: `Bearer ${tokenGen}`
-        }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-  }
-)
-
-Given(
-  'the user submits {string} {string} with valid token but tampered',
-  async function (endpt, actualid) {
-    endpoint = strProcessor(endpt)
-    id = strProcessor(actualid)
-
-    tokenGen = await token(tokenUrl, clintId, secretId)
-    tokenGen = tokenGen + 'a'
-    const uri = makeUri(baseUrl, endpoint, id)
-    try {
-      response = await axios.get(uri, {
-        headers: {
-          Authorization: `Bearer ${tokenGen}`
-        }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-  }
-)
-
-Given(
-  'the user submits {string} {string} request',
-  async function (endpt, actualid) {
-    endpoint = strProcessor(endpt)
-    id = strProcessor(actualid)
-
-    const uri = makeUri(baseUrl, endpoint, id)
-    try {
-      response = await axios.get(uri, {
-        headers: {
-          Authorization: `Bearer ${tokenGen}`
-        }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-  }
-)
-
-// ===== When step =====
-
-When(/^the request is processed by the system$/, async function () {
-  if (!response) {
-    throw new Error('No response captured at all (unexpected).')
-  }
-  if (response.status === 0) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `[NETWORK] Failed to reach API. baseUrl=${baseUrl}, endpoint=${endpoint}, id=${id}\n` +
-        `URI: ${response.data?.uri}\n` +
-        `Message: ${response.data?.message}`
-    )
-  }
-  expect(response).to.not.equal(null)
-  expect(response).to.not.equal(undefined)
-})
-
-Then(/^the API should return the location details$/, async function () {
-  if (response.status === 0) {
-    throw new Error(
-      `Expected 200 but got NETWORK_ERROR (0). URI=${response.data?.uri} :: ${response.data?.message}`
-    )
-  }
-  expect(response.status).to.equal(responseCodes.ok)
-})
-
-Then(
-  /^endpoint return unauthorised response code (.+)$/,
-  async (statusCode) => {
-    if (response.status === 0) {
-      throw new Error(
-        `Expected ${statusCode} but got NETWORK_ERROR (0). URI=${response.data?.uri} :: ${response.data?.message}`
-      )
-    }
-    const actualResponse = response.data
-
-    expect(response.status.toString()).to.equal(
-      statusCode.replace(/['"]+/g, '')
-    )
-    let verificatinStatus = false
-    // Verifying the error response has expected keys
-    if (response.status === 401) {
-      expect(actualResponse.message).to.equal(holdingsendpointKeys.UNAUTHORISED)
-      verificatinStatus = true
-    }
-    if (response.status === 403) {
-      expect(actualResponse.Message).to.equal(
-        holdingsendpointKeys.ACCESS_DENIED
-      )
-      verificatinStatus = true
-    }
-    expect(verificatinStatus).to.equal(true)
-  }
-)
-
-Then(
-  'endpoint return unsuccessful response code {string} {string}',
-  async (statusCode, statusMsg) => {
-    if (response.status === 0) {
-      throw new Error(
-        `Expected ${statusCode} but got NETWORK_ERROR (0). URI=${response.data?.uri} :: ${response.data?.message}`
-      )
-    }
-    const actualResponse = response.data
-    expect(response.status.toString()).to.equal(
-      statusCode.replace(/['"]+/g, '')
-    )
-    // Verifying the error response has expected keys
-    expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.CODE)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.ERRORS)
-    let verificatinStatus = false
-
-    if (response.status === 409) {
-      expect(actualResponse.message).to.equal(
-        holdingsendpointKeys.DUPLICATE_MSG
-      )
-
-      expect(actualResponse.code).to.equal(holdingsendpointKeys.DUPLCIATE_CODE)
-      verificatinStatus = true
-    } else {
-      expect(actualResponse.message).to.equal(statusMsg)
-      expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
-      verificatinStatus = true
-    }
-    expect(verificatinStatus).to.equal(true)
-    expect(actualResponse.errors.length).to.equal(0)
-  }
-)
 
 Then(
   /^the API should return the details for the specified CPH number (.+) (.+)$/,
   async function (expectedCpStatus, expectedLocationID) {
-    if (response.status === 0) {
+    const res = this.response
+
+    if (res?.status === 0) {
       throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${response.data?.uri} :: ${response.data?.message}`
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
       )
     }
+
+    const endpoint = this.endpoint
+    const id = this.id
+
     const status = strProcessor(expectedCpStatus)
-    expect(response.status).to.equal(responseCodes.ok)
-    // Verifying the expected keys present from the holdings successful response
-    const resData = response.data.data
+
+    expect(res.status).to.equal(responseCodes.ok)
+
+    const resData = res.data.data
     expect(resData).to.have.property(holdingsendpointKeys.TYPE)
     expect(resData).to.have.property(holdingsendpointKeys.ID)
     expect(resData).to.have.property(holdingsendpointKeys.CPHTYPE)
-    const mergedPayload = {
-      ...response.data.data,
-      links: response.data.links
-    }
+
+    const mergedPayload = { ...res.data.data, links: res.data.links }
     const cphResponseData = new Cph(mergedPayload)
 
-    // Get the type of relationship 'location'
     const locationData = cphResponseData.getRelationshipData('location')
-
-    // Get the link to the 'location' relationship
     const locationLink = cphResponseData.getRelationshipLink('location')
 
     expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
-
     expect(locationLink).to.equal(
       `/holdings/${cphResponseData.getId()}/relationships/location`
     )
 
-    // Verifying that the API response includes type as 'holdings'
     expect(cphResponseData.getType()).to.equal(endpoint)
-    // Verifying that the API response includes id with CPH number
     expect(cphResponseData.getId()).to.equal(id)
+
     const expectedCphTypeValidation = expectedCphTypes.filter(
       (expectedType) =>
         expectedType.toUpperCase() ===
         cphResponseData.getCphType().toUpperCase()
     )
 
-    // Get the link to the 'location' relationship
     const selfLink = cphResponseData.getSelfLink()
     expect(selfLink).to.equal(`/${endpoint}/${cphResponseData.getId()}`)
-    // Verifying that the API response includes only valid 'cphType' values
+
     expect(expectedCphTypeValidation).to.have.length.above(0)
     expect(cphResponseData.getCphType().toUpperCase()).to.equal(status)
-  }
-)
-
-Then(
-  /^endpoint must return unsuccessful error response (.+)$/,
-  async (expectedMessage) => {
-    if (response.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${response.data?.uri} :: ${response.data?.message}`
-      )
-    }
-    const actualResponse = response.data
-    expect(response.status).to.equal(responseCodes.badRequest)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.CODE)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.ERRORS)
-    expect(actualResponse.message).to.equal(
-      holdingsendpointKeys.INVALID_PARAMETERS
-    )
-    expect(holdingsendpointKeys.BAD_REQUEST).to.equal(
-      holdingsendpointKeys.BAD_REQUEST
-    )
-    const errorMeesage = actualResponse.errors[0]
-    const cleanedMessage = expectedMessage.replace(/^"|"$/g, '')
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.CODE)
-    expect(errorMeesage).to.have.property(holdingsendpointKeys.MSG)
-    if (endpoint === methodNames.holdings) {
-      expect(errorMeesage).to.have.property(holdingsendpointKeys.COUNTYID)
-      expect(errorMeesage).to.have.property(holdingsendpointKeys.PARISHID)
-      expect(errorMeesage).to.have.property(holdingsendpointKeys.HOLDINGSID)
-      expect(errorMeesage.code).to.equal(holdingsendpointKeys.VALIDATION_ERROR)
-      const cpharray = id.split('/')
-      expect(errorMeesage.countyId).to.equal(cpharray[0])
-      expect(errorMeesage.parishId).to.equal(cpharray[1])
-      expect(errorMeesage.holdingId).to.equal(cpharray[2])
-    }
-    if (endpoint === methodNames.locations) {
-      expect(errorMeesage).to.have.property(locationsKeys.locationsId)
-      expect(errorMeesage.locationId).to.equal(id)
-    }
-
-    expect(errorMeesage.message).to.equal(cleanedMessage)
-    expect(actualResponse.errors.length).to.equal(1)
-    expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
   }
 )
