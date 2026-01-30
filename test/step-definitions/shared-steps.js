@@ -164,21 +164,21 @@ Then(
 
     expect(res.status.toString()).to.equal(statusCode.replace(/['"]+/g, ''))
 
-    let verificatinStatus = false
+    let verificationStatus = false
 
     if (res.status === 401) {
       expect(actualResponse.message).to.equal(holdingsendpointKeys.UNAUTHORISED)
-      verificatinStatus = true
+      verificationStatus = true
     }
 
     if (res.status === 403) {
       expect(actualResponse.Message).to.equal(
         holdingsendpointKeys.ACCESS_DENIED
       )
-      verificatinStatus = true
+      verificationStatus = true
     }
 
-    expect(verificatinStatus).to.equal(true)
+    expect(verificationStatus).to.equal(true)
   }
 )
 
@@ -201,21 +201,21 @@ Then(
     expect(actualResponse).to.have.property(holdingsendpointKeys.CODE)
     expect(actualResponse).to.have.property(holdingsendpointKeys.ERRORS)
 
-    let verificatinStatus = false
+    let verificationStatus = false
 
     if (res.status === 409) {
       expect(actualResponse.message).to.equal(
         holdingsendpointKeys.DUPLICATE_MSG
       )
       expect(actualResponse.code).to.equal(holdingsendpointKeys.DUPLCIATE_CODE)
-      verificatinStatus = true
+      verificationStatus = true
     } else {
       expect(actualResponse.message).to.equal(statusMsg)
       expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
-      verificatinStatus = true
+      verificationStatus = true
     }
 
-    expect(verificatinStatus).to.equal(true)
+    expect(verificationStatus).to.equal(true)
     expect(actualResponse.errors.length).to.equal(0)
   }
 )
