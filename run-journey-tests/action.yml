@@ -1,12 +1,14 @@
 name: Run Journey Tests on GitHub
 
+description: Run the journey tests against integration layer
+
 inputs:
   example-node-backend:
     required: false
-    type: string
+    description: input
   example-node-frontend:
     required: false
-    type: string
+    description: input
 
 runs:
   using: "composite"
