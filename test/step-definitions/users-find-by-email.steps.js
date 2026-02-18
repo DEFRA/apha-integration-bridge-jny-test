@@ -13,6 +13,8 @@ let emailAddress = ''
 let tokenGen = ''
 let response = ''
 
+const normalisePath = (p) => (p || '').replace(/^\/+/, '')
+
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
   return {
@@ -137,7 +139,9 @@ Then(
 
     expect(res.data).to.have.property('links')
     expect(res.data.links).to.have.property('self')
-    expect(res.data.links.self).to.equal('case-management/users/find')
+
+    const selfLink = normalisePath(res.data.links.self)
+    expect(selfLink).to.equal('case-management/users/find')
   }
 )
 
@@ -154,12 +158,13 @@ Then('the API should return no matching users', async function () {
 
   expect(res.data).to.have.property('data')
   expect(res.data.data).to.be.an('array')
-
   expect(res.data.data.length).to.equal(0)
 
   expect(res.data).to.have.property('links')
   expect(res.data.links).to.have.property('self')
-  expect(res.data.links.self).to.equal('case-management/users/find')
+
+  const selfLink = normalisePath(res.data.links.self)
+  expect(selfLink).to.equal('case-management/users/find')
 })
 
 Then(
