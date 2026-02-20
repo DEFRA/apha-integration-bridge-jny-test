@@ -1,4 +1,4 @@
-@dev
+@dev @test @perf-test @prod
 Feature: Workorders endpoint tests
 
   Background:
@@ -10,8 +10,8 @@ Feature: Workorders endpoint tests
     Then endpoint return unauthorised response code "<statuscode>"
 
     Examples:
-      | endpoint         | page | pageSize | startDate                 | endDate                   | statuscode |
-      | alpha/workorders | 1    | 10       | 2022-02-18T09:54:09.778Z | 2026-02-18T09:54:09.778Z | 401        |
+      | endpoint                   | page                    | pageSize                     | startDate                       | endDate                       | statuscode |
+      | {{workorders.endpoint}}    | {{workorders.page}}     | {{workorders.pageSize}}      | {{workorders.startDate}}        | {{workorders.endDate}}        | 401        |
 
   Scenario Outline: 02 Verify that forbidden response (403) is returned if token is tampered
     Given the user submits "<endpoint>" workorders GET request with params page "<page>" pageSize "<pageSize>" startActivationDate "<startDate>" endActivationDate "<endDate>" using tampered token
@@ -19,8 +19,8 @@ Feature: Workorders endpoint tests
     Then endpoint return unauthorised response code "<statuscode>"
 
     Examples:
-      | endpoint         | page | pageSize | startDate                 | endDate                   | statuscode |
-      | alpha/workorders | 1    | 10       | 2022-02-18T09:54:09.778Z | 2026-02-18T09:54:09.778Z | 403        |
+      | endpoint                   | page                    | pageSize                     | startDate                       | endDate                       | statuscode |
+      | {{workorders.endpoint}}    | {{workorders.page}}     | {{workorders.pageSize}}      | {{workorders.startDate}}        | {{workorders.endDate}}        | 403        |
 
   Scenario Outline: 03 Verify successful response returns workorders array and links
     Given the user submits "<endpoint>" workorders GET request with params page "<page>" pageSize "<pageSize>" startActivationDate "<startDate>" endActivationDate "<endDate>"
@@ -28,8 +28,8 @@ Feature: Workorders endpoint tests
     Then the workorders API should return results for page "<page>" pageSize "<pageSize>"
 
     Examples:
-      | endpoint         | page | pageSize | startDate                 | endDate                   |
-      | alpha/workorders | 1    | 10       | 2022-02-18T09:54:09.778Z | 2026-02-18T09:54:09.778Z |
+      | endpoint                   | page                    | pageSize                     | startDate                       | endDate                       |
+      | {{workorders.endpoint}}    | {{workorders.page}}     | {{workorders.pageSize}}      | {{workorders.startDate}}        | {{workorders.endDate}}        |
 
   Scenario Outline: 04 Verify the self link contains expected query params
     Given the user submits "<endpoint>" workorders GET request with params page "<page>" pageSize "<pageSize>" startActivationDate "<startDate>" endActivationDate "<endDate>"
@@ -37,5 +37,5 @@ Feature: Workorders endpoint tests
     Then the workorders API should return a self link containing the same query params
 
     Examples:
-      | endpoint         | page | pageSize | startDate                 | endDate                   |
-      | alpha/workorders | 1    | 10       | 2022-02-18T09:54:09.778Z | 2026-02-18T09:54:09.778Z |
+      | endpoint                   | page                    | pageSize                     | startDate                       | endDate                       |
+      | {{workorders.endpoint}}    | {{workorders.page}}     | {{workorders.pageSize}}      | {{workorders.startDate}}        | {{workorders.endDate}}        |

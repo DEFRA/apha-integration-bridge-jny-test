@@ -1,111 +1,138 @@
-apha-integration-bridge-jny-test
+# apha-integration-bridge-jny-test
 
-The template to create a service that runs WDIO tests against an environment.
+WebdriverIO/Cucumber journey tests for the APHA Integration Bridge API.
 
-- [Local](#local)
-  - [Requirements](#requirements)
-    - [Node.js](#nodejs)
-  - [Setup](#setup)
-  - [Running local tests](#running-local-tests)
-  - [Debugging local tests](#debugging-local-tests)
-- [Production](#production)
-  - [Debugging tests](#debugging-tests)
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Running tests](#running-tests)
+- [Environment variables](#environment-variables)
+- [Test reports](#test-reports)
+- [Scenario test data](#scenario-test-data)
+- [CI/CD and CDP portal](#cicd-and-cdp-portal)
+- [Local docker stack (optional)](#local-docker-stack-optional)
 - [Licence](#licence)
-  - [About the licence](#about-the-licence)
 
-## Local Development
+## Prerequisites
 
-### Requirements
+- Node.js `>= 22.13.1` (see `.nvmrc`)
+- npm
+- Google Chrome (or a compatible remote WebDriver endpoint)
 
-#### Node.js
-
-Please install [Node.js](http://nodejs.org/) `>= v20` and [npm](https://nodejs.org/) `>= v9`. You will find it
-easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
-
-To use the correct version of Node.js for this application, via nvm:
+Using `nvm`:
 
 ```bash
 nvm use
 ```
 
-### Setup
-
-Install application dependencies:
+## Setup
 
 ```bash
-npm install
+npm ci
 ```
 
-### Running local tests
+## Running tests
 
-Start application you are testing on the url specified in `baseUrl` [wdio.local.conf.js](wdio.local.conf.js)
+Run all features using the default config (`wdio.conf.js`):
 
 ```bash
-npm run test:local
+npm test
 ```
 
-### Debugging local tests
+Run against a specific environment config:
 
 ```bash
-npm run test:local:debug
+npm run test:dev
+npm run test:test
+npm run test:perf
+npm run test:prod
 ```
 
-## Production
+Notes:
 
-### Running the tests
+- Features are selected by Cucumber tag (`@dev`, `@test`, `@perf-test`, `@prod`).
+- `wdio.conf.js` uses a local ChromeDriver by default on `127.0.0.1:4444`.
+- Environment-specific WDIO configs switch to direct WebDriver protocol.
 
-Tests are run from the CDP-Portal under the Test Suites section. Before any changes can be run, a new docker image must be built, this will happen automatically when a pull request is merged into the `main` branch.
-You can check the progress of the build under the actions section of this repository. Builds typically take around 1-2 minutes.
+## Environment variables
 
-The results of the test run are made available in the portal.
+Set the secret for the target environment before running tests:
 
-## Requirements of CDP Environment Tests
+- `DEV_SECRET` for `npm run test:dev`
+- `TEST_SECRET` for `npm run test:test`
+- `PERF_SECRET` for `npm run test:perf`
+- `PROD_SECRET` for `npm run test:prod`
 
-1. Your service builds as a docker container using the `.github/workflows/publish.yml`
-   The workflow tags the docker images allowing the CDP Portal to identify how the container should be run on the platform.
-   It also ensures its published to the correct docker repository.
+Optional variables:
 
-2. The Dockerfile's entrypoint script should return exit code of 0 if the test suite passes or 1/>0 if it fails
+- `ENV_NAME` to override environment selection in property resolution.
+- `COGNITO_CLIENT_ID` / `COGNITO_CLIENT_SECRET` to override env file values.
+- `COGNITO_DOMAIN` to override Cognito token domain.
+- `HTTP_PROXY` to route outbound requests through a proxy (non-local mode).
+- `IS_LOCAL=true` to force local/non-proxy token behaviour.
+- `CHROMEDRIVER_URL` / `CHROMEDRIVER_PORT` to target a remote/local driver host.
 
-3. Test reports should be published to S3 using the script in `./bin/publish-tests.sh`
+## Test reports
 
-## Running on GitHub
+Allure results are generated during test runs in `allure-results`.
 
-Alternatively you can run the test suite as a GitHub workflow.
-Test runs on GitHub are not able to connect to the CDP Test environments. Instead, they run the tests agains a version of the services running in docker.
-A docker compose `compose.yml` is included as a starting point, which includes the databases (mongodb, redis) and infrastructure (localstack) pre-setup.
+Generate a local report:
 
-Steps:
+```bash
+npm run report
+```
 
-1. Edit the compose.yml to include your services.
-2. Modify the scripts in docker/scripts to pre-populate the database, if required and create any localstack resources.
-3. Test the setup locally with `docker compose up` and `npm run test:github`
-4. Set up the workflow trigger in `.github/workflows/journey-tests`.
+Generate and publish report (CDP/S3 flow):
 
-By default, the provided workflow will run when triggered manually from GitHub or when triggered by another workflow.
+```bash
+npm run report:publish
+```
 
-If you want to use the repository exclusively for running docker composed based test suites consider displaying the publish.yml workflow.
+If tests fail, a `FAILED` marker file is written for portal status integration.
 
-## BrowserStack
+## Scenario test data
 
-Two wdio configuration files are provided to help run the tests using BrowserStack in both a GitHub workflow (`wdio.github.browserstack.conf.js`) and from the CDP Portal (`wdio.browserstack.conf.js`).
-They can be run from npm using the `npm run test:browserstack` (for running via portal) and `npm run test:github:browserstack` (from GitHib runner).
-See the CDP Documentation for more details.
+Feature files now live under `test/features/common` and use token placeholders instead of hardcoded values, for example:
+
+```gherkin
+| {{workorders.endpoint}} | {{workorders.startDate}} |
+```
+
+Token values are loaded from:
+
+- `test/data/scenario-values/base.js` (shared defaults)
+- `test/data/scenario-values/base/*.js` (domain-based base values)
+- `test/data/scenario-values/dev.js`
+- `test/data/scenario-values/test.js`
+- `test/data/scenario-values/perf-test.js`
+- `test/data/scenario-values/prod.js`
+- `test/data/scenario-values/local.js`
+
+The active values file is selected from `ENV_NAME` (or WDIO environment tag) and merged over `base.js`.
+
+## CI/CD and CDP portal
+
+- `publish.yml` builds and publishes the test suite image on merge to `main`.
+- Journey tests can be run from the CDP portal against deployed environments.
+- Exit code behaviour is controlled by `entrypoint.sh` (pass = `0`, fail = non-zero).
+
+## Local docker stack (optional)
+
+`compose.yml` provides a starter local stack (Selenium, MongoDB, Redis, Localstack) for integration-style runs.
+
+Typical workflow:
+
+1. Add your service containers to `compose.yml`.
+2. Start the stack with `docker compose up -d`.
+3. Point test base URLs/token settings to your local services as needed.
+4. Run the WDIO suite with one of the npm test scripts above.
 
 ## Licence
 
-THIS INFORMATION IS LICENSED UNDER THE CONDITIONS OF THE OPEN GOVERNMENT LICENCE found at:
-
+This information is licensed under the Open Government Licence v3:
 <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3>
 
-The following attribution statement MUST be cited in your products and applications when using this information.
+Attribution statement:
 
-> Contains public sector information licensed under the Open Government licence v3
-
-### About the licence
-
-The Open Government Licence (OGL) was developed by the Controller of Her Majesty's Stationery Office (HMSO) to enable
-information providers in the public sector to license the use and re-use of their information under a common open
-licence.
-
-It is designed to encourage use and re-use of information freely and flexibly, with only a few conditions.
+> Contains public sector information licensed under the Open Government Licence v3.

@@ -1,4 +1,4 @@
-@dev
+@dev @test @perf-test @prod
 Feature: (AIL-282) Locations endpoint tests
 
   Background:
@@ -10,8 +10,8 @@ Feature: (AIL-282) Locations endpoint tests
     Then endpoint return unauthorised response code "<statuscode>"
 
     Examples:
-      | endpoint  | id      | statuscode |
-      | locations | L173630 |        401 |
+      | endpoint                  | id                      | statuscode |
+      | {{locations.endpoint}}    | {{locations.authId}}    | 401        |
 
   Scenario Outline: 02 Verify that, Forbidden response (403) should be returned if token is modified or tampered
     Given the user submits "<endpoint>" "<id>" with valid token but tampered
@@ -19,8 +19,8 @@ Feature: (AIL-282) Locations endpoint tests
     Then endpoint return unauthorised response code "<statuscode>"
 
     Examples:
-      | endpoint  | id      | statuscode |
-      | locations | L173630 |        403 |
+      | endpoint                  | id                      | statuscode |
+      | {{locations.endpoint}}    | {{locations.authId}}    | 403        |
 
   Scenario Outline: 03 Verify successful response from Locations endpoint when a valid location ID is provided
     Given the user submits "<endpoint>" "<id>" request
@@ -28,8 +28,8 @@ Feature: (AIL-282) Locations endpoint tests
     Then the API should return the location details
 
     Examples:
-      | endpoint  | id      |
-      | locations | L153161 |
+      | endpoint                  | id                       |
+      | {{locations.endpoint}}    | {{locations.validId}}    |
 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent LocationId
     Given the user submits "<endpoint>" "<id>" request
@@ -37,9 +37,9 @@ Feature: (AIL-282) Locations endpoint tests
     Then endpoint return unsuccessful response code "<statuscode>" "<msg>"
 
     Examples:
-      | endpoint  | id    | statuscode | msg                        |
-      | locations | L1999 |        404 | Location not found         |
-      | locations |       |        404 | No route: [GET] /locations |
+      | endpoint                  | id                          | statuscode | msg                        |
+      | {{locations.endpoint}}    | {{locations.notFoundId}}    | 404        | Location not found         |
+      | {{locations.endpoint}}    | {{locations.noRouteId}}     | 404        | No route: [GET] /locations |
 
   Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid location number
     Given the user submits "<endpoint>" "<id>" request
@@ -47,7 +47,7 @@ Feature: (AIL-282) Locations endpoint tests
     Then endpoint must return unsuccessful error response "<message>"
 
     Examples:
-      | endpoint  | id        | message                                                                            |
-      | locations | L1531614s | "locationId" with value "L1531614s" fails to match the required pattern: /^L\\d+$/ |
-      | locations | @££@@£    | "locationId" with value "@££@@£" fails to match the required pattern: /^L\\d+$/    |
-      | locations |       888 | "locationId" with value "888" fails to match the required pattern: /^L\\d+$/       |
+      | endpoint                  | id                               | message                                        |
+      | {{locations.endpoint}}    | {{locations.invalidIds.alphaSuffix}} | {{locations.validationMessages.alphaSuffix}} |
+      | {{locations.endpoint}}    | {{locations.invalidIds.specialChars}} | {{locations.validationMessages.specialChars}} |
+      | {{locations.endpoint}}    | {{locations.invalidIds.digitsOnly}} | {{locations.validationMessages.digitsOnly}} |

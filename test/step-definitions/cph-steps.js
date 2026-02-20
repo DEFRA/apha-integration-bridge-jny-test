@@ -7,8 +7,10 @@ import {
   holdingsendpointKeys,
   responseCodes
 } from '../utils/token'
+import { resolveScenarioString } from '../utils/scenario-data.js'
 
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
+const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
 
 Then(
   /^the API should return the details for the specified CPH number (.+) (.+)$/,
@@ -24,7 +26,8 @@ Then(
     const endpoint = this.endpoint
     const id = this.id
 
-    const status = strProcessor(expectedCpStatus)
+    const status = resolveArg(expectedCpStatus)
+    const expectedLocation = resolveArg(expectedLocationID)
 
     expect(res.status).to.equal(responseCodes.ok)
 
@@ -39,7 +42,7 @@ Then(
     const locationData = cphResponseData.getRelationshipData('location')
     const locationLink = cphResponseData.getRelationshipLink('location')
 
-    expect(locationData.id).to.equal(expectedLocationID.replace(/['"]+/g, ''))
+    expect(locationData.id).to.equal(expectedLocation.replace(/['"]+/g, ''))
     expect(locationLink).to.equal(
       `/holdings/${cphResponseData.getId()}/relationships/location`
     )

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
+import { resolveScenarioString } from '../utils/scenario-data.js'
 
 import {
   token,
@@ -21,6 +22,8 @@ let id = ''
 let endpoint = ''
 let tokenGen = ''
 let response = ''
+
+const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
 
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
@@ -49,8 +52,8 @@ Given(/^the auth token$/, async function () {
 Given(
   'the user submits {string} {string} request with invalid token',
   async function (endpt, actualid) {
-    endpoint = strProcessor(endpt)
-    id = strProcessor(actualid)
+    endpoint = resolveArg(endpt)
+    id = resolveArg(actualid)
 
     tokenGen = 'sss'
     const uri = makeUri(baseUrl, endpoint, id)
@@ -74,8 +77,8 @@ Given(
 Given(
   'the user submits {string} {string} with valid token but tampered',
   async function (endpt, actualid) {
-    endpoint = strProcessor(endpt)
-    id = strProcessor(actualid)
+    endpoint = resolveArg(endpt)
+    id = resolveArg(actualid)
 
     tokenGen = await token(tokenUrl, clintId, secretId)
     tokenGen = tokenGen + 'a'
@@ -100,8 +103,8 @@ Given(
 Given(
   'the user submits {string} {string} request',
   async function (endpt, actualid) {
-    endpoint = strProcessor(endpt)
-    id = strProcessor(actualid)
+    endpoint = resolveArg(endpt)
+    id = resolveArg(actualid)
 
     // Prefer token from World if Given the auth token ran
     tokenGen = this.tokenGen || tokenGen
@@ -152,17 +155,20 @@ When(/^the request is processed by the system$/, async function () {
 Then(
   /^endpoint return unauthorised response code (.+)$/,
   async function (statusCode) {
+    const expectedStatusCode = resolveArg(statusCode)
     const res = this.response || response
 
     if (res.status === 0) {
       throw new Error(
-        `Expected ${statusCode} but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+        `Expected ${expectedStatusCode} but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
       )
     }
 
     const actualResponse = res.data
 
-    expect(res.status.toString()).to.equal(statusCode.replace(/['"]+/g, ''))
+    expect(res.status.toString()).to.equal(
+      expectedStatusCode.replace(/['"]+/g, '')
+    )
 
     let verificationStatus = false
 
@@ -185,17 +191,21 @@ Then(
 Then(
   'endpoint return unsuccessful response code {string} {string}',
   async function (statusCode, statusMsg) {
+    const expectedStatusCode = resolveArg(statusCode)
+    const expectedStatusMsg = resolveArg(statusMsg)
     const res = this.response || response
 
     if (res.status === 0) {
       throw new Error(
-        `Expected ${statusCode} but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+        `Expected ${expectedStatusCode} but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
       )
     }
 
     const actualResponse = res.data
 
-    expect(res.status.toString()).to.equal(statusCode.replace(/['"]+/g, ''))
+    expect(res.status.toString()).to.equal(
+      expectedStatusCode.replace(/['"]+/g, '')
+    )
 
     expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
     expect(actualResponse).to.have.property(holdingsendpointKeys.CODE)
@@ -210,7 +220,7 @@ Then(
       expect(actualResponse.code).to.equal(holdingsendpointKeys.DUPLCIATE_CODE)
       verificationStatus = true
     } else {
-      expect(actualResponse.message).to.equal(statusMsg)
+      expect(actualResponse.message).to.equal(expectedStatusMsg)
       expect(actualResponse.code).to.equal(holdingsendpointKeys.NOT_FOUND)
       verificationStatus = true
     }
@@ -249,7 +259,12 @@ Then(
     )
 
     const errorMeesage = actualResponse.errors[0]
-    const cleanedMessage = expectedMessage.replace(/^"|"$/g, '')
+    const resolvedExpectedMessage = resolveArg(expectedMessage)
+    const cleanedMessage =
+      resolvedExpectedMessage.startsWith('"') &&
+      resolvedExpectedMessage.endsWith('"')
+        ? resolvedExpectedMessage.slice(1, -1)
+        : resolvedExpectedMessage
 
     expect(errorMeesage).to.have.property(holdingsendpointKeys.CODE)
     expect(errorMeesage).to.have.property(holdingsendpointKeys.MSG)

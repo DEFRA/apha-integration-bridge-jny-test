@@ -1,4 +1,4 @@
-@dev
+@dev @test @perf-test @prod
 Feature: Case endpoint tests
 
   Background:
@@ -12,6 +12,4 @@ Feature: Case endpoint tests
   Scenario: 02 Verify that missing applicationReferenceNumber returns 400 with validation error
     Given the user submits a case create request missing application reference
     When the request is processed by the system
-    Then the case API should return bad request with message "applicationReferenceNumber\" is required"
-
-
+    Then the case API should return bad request with message "{{caseCreate.missingApplicationReferenceMessage}}"
