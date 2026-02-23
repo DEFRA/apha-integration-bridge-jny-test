@@ -4,6 +4,7 @@ import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
 import { token, strProcessor, responseCodes } from '../utils/token'
+import { resolveScenarioString } from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
@@ -12,6 +13,8 @@ let endpoint = ''
 let emailAddress = ''
 let tokenGen = ''
 let response = ''
+
+const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
 
 const normalisePath = (p) => (p || '').replace(/^\/+/, '')
 
@@ -30,8 +33,8 @@ function toResponseLike(error, uri) {
 Given(
   'the user submits {string} find request with email {string}',
   async function (endpt, email) {
-    endpoint = strProcessor(endpt)
-    emailAddress = strProcessor(email)
+    endpoint = resolveArg(endpt)
+    emailAddress = resolveArg(email)
 
     tokenGen = await token(tokenUrl, clintId, secretId)
 
@@ -58,8 +61,8 @@ Given(
 Given(
   'the user submits {string} find request with email {string} using invalid token',
   async function (endpt, email) {
-    endpoint = strProcessor(endpt)
-    emailAddress = strProcessor(email)
+    endpoint = resolveArg(endpt)
+    emailAddress = resolveArg(email)
 
     tokenGen = 'sss'
 
@@ -86,8 +89,8 @@ Given(
 Given(
   'the user submits {string} find request with email {string} using tampered token',
   async function (endpt, email) {
-    endpoint = strProcessor(endpt)
-    emailAddress = strProcessor(email)
+    endpoint = resolveArg(endpt)
+    emailAddress = resolveArg(email)
 
     tokenGen = await token(tokenUrl, clintId, secretId)
     tokenGen = tokenGen + 'a'
@@ -114,7 +117,7 @@ Given(
 
 Then(
   'the API should return user details for email {string}',
-  async function (email) {
+  async function (_email) {
     const res = this.response || response
 
     if (res.status === 0) {
@@ -196,7 +199,7 @@ Then(
     expect(err).to.have.property('message')
     expect(err.code).to.equal('VALIDATION_ERROR')
 
-    const cleaned = expectedMessage.replace(/^"|"$/g, '')
+    const cleaned = resolveArg(expectedMessage).replace(/^"|"$/g, '')
     expect(err.message).to.equal(cleaned)
   }
 )

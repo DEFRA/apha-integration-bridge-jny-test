@@ -4,6 +4,7 @@ import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
 import { token, strProcessor, responseCodes } from '../utils/token'
+import { resolveScenarioString } from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
@@ -12,6 +13,8 @@ let endpoint = ''
 let tokenGen = ''
 let response = ''
 let query = null
+
+const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
 
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
@@ -38,17 +41,17 @@ const parseQueryString = (urlOrPath) => {
 Given(
   'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string}',
   async function (endpt, page, pageSize, startDate, endDate) {
-    endpoint = strProcessor(endpt)
+    endpoint = resolveArg(endpt)
 
     tokenGen =
       this.tokenGen || tokenGen || (await token(tokenUrl, clintId, secretId))
 
     const uri = makeUri(baseUrl, endpoint, '')
     query = {
-      page: strProcessor(page),
-      pageSize: strProcessor(pageSize),
-      startActivationDate: strProcessor(startDate),
-      endActivationDate: strProcessor(endDate)
+      page: resolveArg(page),
+      pageSize: resolveArg(pageSize),
+      startActivationDate: resolveArg(startDate),
+      endActivationDate: resolveArg(endDate)
     }
 
     try {
@@ -72,15 +75,15 @@ Given(
 Given(
   'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string} using invalid token',
   async function (endpt, page, pageSize, startDate, endDate) {
-    endpoint = strProcessor(endpt)
+    endpoint = resolveArg(endpt)
     tokenGen = 'sss'
 
     const uri = makeUri(baseUrl, endpoint, '')
     query = {
-      page: strProcessor(page),
-      pageSize: strProcessor(pageSize),
-      startActivationDate: strProcessor(startDate),
-      endActivationDate: strProcessor(endDate)
+      page: resolveArg(page),
+      pageSize: resolveArg(pageSize),
+      startActivationDate: resolveArg(startDate),
+      endActivationDate: resolveArg(endDate)
     }
 
     try {
@@ -105,17 +108,17 @@ Given(
 Given(
   'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string} using tampered token',
   async function (endpt, page, pageSize, startDate, endDate) {
-    endpoint = strProcessor(endpt)
+    endpoint = resolveArg(endpt)
 
     tokenGen = await token(tokenUrl, clintId, secretId)
     tokenGen = tokenGen + 'a'
 
     const uri = makeUri(baseUrl, endpoint, '')
     query = {
-      page: strProcessor(page),
-      pageSize: strProcessor(pageSize),
-      startActivationDate: strProcessor(startDate),
-      endActivationDate: strProcessor(endDate)
+      page: resolveArg(page),
+      pageSize: resolveArg(pageSize),
+      startActivationDate: resolveArg(startDate),
+      endActivationDate: resolveArg(endDate)
     }
 
     try {
@@ -140,6 +143,8 @@ Given(
 Then(
   'the workorders API should return results for page {string} pageSize {string}',
   async function (page, pageSize) {
+    const expectedPage = resolveArg(page)
+    const expectedPageSize = resolveArg(pageSize)
     const res = this.response || response
 
     if (res.status === 0) {
@@ -184,8 +189,8 @@ Then(
 
     // Basic page/pageSize check via self link query string
     const qs = parseQueryString(res.data.links.self)
-    expect(qs.get('page')).to.equal(strProcessor(page))
-    expect(qs.get('pageSize')).to.equal(strProcessor(pageSize))
+    expect(qs.get('page')).to.equal(expectedPage)
+    expect(qs.get('pageSize')).to.equal(expectedPageSize)
   }
 )
 

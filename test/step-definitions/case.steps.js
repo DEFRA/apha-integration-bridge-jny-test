@@ -4,11 +4,17 @@ import { expect } from 'chai'
 
 import { cfg } from '../../config/properties.js'
 import { token, responseCodes } from '../utils/token'
+import {
+  getScenarioValue,
+  resolveScenarioString
+} from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
 
 let tokenGen = ''
+
+const resolveArg = (raw) => resolveScenarioString(raw)
 
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
@@ -27,49 +33,10 @@ Given(
   async function () {
     tokenGen = await token(tokenUrl, clintId, secretId)
 
-    const uri = `${baseUrl.replace(/\/$/, '')}/case-management/case`
+    const endpoint = getScenarioValue('caseCreate.endpoint')
+    const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
 
-    const payload = {
-      applicationReferenceNumber: 'TB-1234-5678',
-      journeyVersion: { major: 2, minor: 1 },
-      journeyId:
-        'GET_PERMISSION_TO_MOVE_ANIMALS_UNDER_DISEASE_CONTROLS_TB_ENGLAND',
-      applicant: {
-        type: 'guest',
-        emailAddress: 'jose@mail.com',
-        name: {
-          firstName: 'Jose',
-          lastName: 'Garcia'
-        }
-      },
-      sections: [
-        { sectionKey: 'origin', title: 'Movement origin', questionAnswers: [] },
-        {
-          sectionKey: 'destination',
-          title: 'Movement destination',
-          questionAnswers: []
-        },
-        {
-          sectionKey: 'licence',
-          title: 'Receiving the licence',
-          questionAnswers: []
-        }
-      ],
-      keyFacts: {
-        licenceType: 'TB15',
-        requester: 'origin',
-        movementDirection: 'off',
-        additionalInformation: '',
-        originCph: '12/345/6789',
-        originAddress: {
-          addressLine1: 'asdasdasd',
-          addressTown: 'asdasdasd',
-          addressPostcode: 'RG1 1vv'
-        },
-        originKeeperName: { firstName: 'Test', lastName: 'test' },
-        requesterCph: '12/345/6789'
-      }
-    }
+    const payload = getScenarioValue('caseCreate.validPayload')
 
     let res
     try {
@@ -92,49 +59,11 @@ Given(
   async function () {
     tokenGen = await token(tokenUrl, clintId, secretId)
 
-    const uri = `${baseUrl.replace(/\/$/, '')}/case-management/case`
+    const endpoint = getScenarioValue('caseCreate.endpoint')
+    const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
 
-    // Same payload but WITHOUT applicationReferenceNumber
-    const payload = {
-      journeyVersion: { major: 2, minor: 1 },
-      journeyId:
-        'GET_PERMISSION_TO_MOVE_ANIMALS_UNDER_DISEASE_CONTROLS_TB_ENGLAND',
-      applicant: {
-        type: 'guest',
-        emailAddress: 'jose@mail.com',
-        name: {
-          firstName: 'Jose',
-          lastName: 'Garcia'
-        }
-      },
-      sections: [
-        { sectionKey: 'origin', title: 'Movement origin', questionAnswers: [] },
-        {
-          sectionKey: 'destination',
-          title: 'Movement destination',
-          questionAnswers: []
-        },
-        {
-          sectionKey: 'licence',
-          title: 'Receiving the licence',
-          questionAnswers: []
-        }
-      ],
-      keyFacts: {
-        licenceType: 'TB15',
-        requester: 'origin',
-        movementDirection: 'off',
-        additionalInformation: '',
-        originCph: '12/345/6789',
-        originAddress: {
-          addressLine1: 'asdasdasd',
-          addressTown: 'asdasdasd',
-          addressPostcode: 'RG1 1vv'
-        },
-        originKeeperName: { firstName: 'Test', lastName: 'test' },
-        requesterCph: '12/345/6789'
-      }
-    }
+    const payload = getScenarioValue('caseCreate.validPayload')
+    delete payload.applicationReferenceNumber
 
     let res
     try {
@@ -194,8 +123,9 @@ Then(
     expect(err).to.have.property('code', 'VALIDATION_ERROR')
 
     const cleaned = expectedMessage.replace(/^"|"$/g, '')
+    const resolvedMessage = resolveArg(cleaned)
     const actualMsg = String(err.message)
-    const expected = String(cleaned)
+    const expected = String(resolvedMessage)
 
     const normalisedActual = actualMsg.replace(/^"/, '')
     const normalisedExpected = expected.replace(/^"/, '')
