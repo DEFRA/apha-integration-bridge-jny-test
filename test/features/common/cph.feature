@@ -11,7 +11,7 @@ Feature: (AIL-245) HOLDINGS endpoint tests
 
     Examples:
       | endpoint                 | id                            | statuscode |
-      | {{holdings.endpoint}}    | {{holdings.duplicateCph}}     | 401        |
+      | {{holdings.endpoint}}    | {{holdings.validCph}}         | 401        |
 
   Scenario Outline: 02 Verify that, Forbidden response (403) should be returned if token is modified or tampered
     Given the user submits "<endpoint>" "<id>" with valid token but tampered
@@ -20,7 +20,7 @@ Feature: (AIL-245) HOLDINGS endpoint tests
 
     Examples:
       | endpoint                 | id                            | statuscode |
-      | {{holdings.endpoint}}    | {{holdings.duplicateCph}}     | 403        |
+      | {{holdings.endpoint}}    | {{holdings.validCph}}         | 403        |
 
   Scenario Outline: 03 Verify that a CPH which maps to multiple locations returns 409 Conflict
     Given the user submits "<endpoint>" "<id>" request
@@ -30,7 +30,6 @@ Feature: (AIL-245) HOLDINGS endpoint tests
   Examples:
     | endpoint                 | id                            | statuscode | msg             |
     | {{holdings.endpoint}}    | {{holdings.duplicateCph}}     | 409        | Conflict        |
-    | {{holdings.endpoint}}    | {{holdings.inactiveCph}}      | 504        | Gateway Timeout |
 
 
   Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for an inactive CPH number

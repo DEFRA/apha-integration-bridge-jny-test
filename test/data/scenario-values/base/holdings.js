@@ -1,7 +1,8 @@
 export default {
   endpoint: 'holdings',
+  validCph: '02/057/0030',
   duplicateCph: '08/139/0167',
-  inactiveCph: '12/123/1234',
+  inactiveCph: '99/999/9999',
   invalidCph: {
     countyAlphaLong: '02ww/055/2422',
     countyAlphaShort: '2w/055/2422',
