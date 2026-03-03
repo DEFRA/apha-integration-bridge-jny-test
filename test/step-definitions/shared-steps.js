@@ -15,7 +15,7 @@ import {
 } from '../utils/token'
 
 const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
+const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 
 // Legacy fallback (kept so older steps don’t suddenly break if any still rely on module state)
 let id = ''
@@ -45,7 +45,7 @@ function toResponseLike(error, uri) {
 // ===== Given steps (shared) =====
 
 Given(/^the auth token$/, async function () {
-  tokenGen = await token(tokenUrl, clintId, secretId)
+  tokenGen = await token(tokenUrl, clientId, secretId)
   this.tokenGen = tokenGen
 })
 
@@ -80,7 +80,7 @@ Given(
     endpoint = resolveArg(endpt)
     id = resolveArg(actualid)
 
-    tokenGen = await token(tokenUrl, clintId, secretId)
+    tokenGen = await token(tokenUrl, clientId, secretId)
     tokenGen = tokenGen + 'a'
 
     const uri = makeUri(baseUrl, endpoint, id)
