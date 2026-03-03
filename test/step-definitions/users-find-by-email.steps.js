@@ -7,7 +7,7 @@ import { token, strProcessor, responseCodes } from '../utils/token'
 import { resolveScenarioString } from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
+const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 
 let endpoint = ''
 let emailAddress = ''
@@ -36,7 +36,7 @@ Given(
     endpoint = resolveArg(endpt)
     emailAddress = resolveArg(email)
 
-    tokenGen = await token(tokenUrl, clintId, secretId)
+    tokenGen = await token(tokenUrl, clientId, secretId)
 
     const uri = makeUri(baseUrl, endpoint, '')
     const payload = { emailAddress }
@@ -92,7 +92,7 @@ Given(
     endpoint = resolveArg(endpt)
     emailAddress = resolveArg(email)
 
-    tokenGen = await token(tokenUrl, clintId, secretId)
+    tokenGen = await token(tokenUrl, clientId, secretId)
     tokenGen = tokenGen + 'a'
 
     const uri = makeUri(baseUrl, endpoint, '')

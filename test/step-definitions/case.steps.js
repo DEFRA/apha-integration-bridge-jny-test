@@ -10,7 +10,7 @@ import {
 } from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
+const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 
 let tokenGen = ''
 
@@ -31,7 +31,7 @@ function toResponseLike(error, uri) {
 Given(
   'the user submits a case create request with valid body',
   async function () {
-    tokenGen = await token(tokenUrl, clintId, secretId)
+    tokenGen = await token(tokenUrl, clientId, secretId)
 
     const endpoint = getScenarioValue('caseCreate.endpoint')
     const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
@@ -57,7 +57,7 @@ Given(
 Given(
   'the user submits a case create request missing application reference',
   async function () {
-    tokenGen = await token(tokenUrl, clintId, secretId)
+    tokenGen = await token(tokenUrl, clientId, secretId)
 
     const endpoint = getScenarioValue('caseCreate.endpoint')
     const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`

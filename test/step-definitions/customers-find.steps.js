@@ -10,7 +10,7 @@ import {
 } from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId: clintId, clientSecret: secretId } = cfg.cognito
+const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 
 let endpoint = ''
 let tokenGen = ''
@@ -42,15 +42,15 @@ async function sendCustomersFindRequest({
   tokenMode = 'valid'
 }) {
   endpoint = resolveStringArg(endpt)
+  const cachedToken =
+    world.tokenGen || tokenGen || (await token(tokenUrl, clientId, secretId))
 
   if (tokenMode === 'invalid') {
     tokenGen = 'sss'
   } else if (tokenMode === 'tampered') {
-    tokenGen = await token(tokenUrl, clintId, secretId)
-    tokenGen = tokenGen + 'a'
+    tokenGen = `${cachedToken}a`
   } else {
-    tokenGen =
-      world.tokenGen || tokenGen || (await token(tokenUrl, clintId, secretId))
+    tokenGen = cachedToken
   }
 
   query = {}
