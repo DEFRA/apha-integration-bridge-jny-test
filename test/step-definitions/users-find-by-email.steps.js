@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token'
+import { token, strProcessor, responseCodes } from '../utils/token.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
 
 const baseUrl = cfg.baseUrl

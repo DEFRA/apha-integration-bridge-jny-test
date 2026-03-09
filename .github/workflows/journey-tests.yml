@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # pass the chosen env into your WDIO/deepmerge setup
+      # pass the chosen env into property/scenario resolution
       ENV_NAME: ${{ inputs.environment }}
       CUCUMBER_TAGS: ${{ inputs.environment }}
       DEBUG: ${{ inputs.debug && '1' || '' }}
@@ -43,16 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      - name: Setup Java (for allure-commandline)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Google Chrome
-        uses: browser-actions/setup-chrome@v1
+          node-version: '22'
 
       - name: Install dependencies
         run: npm ci
@@ -68,9 +59,9 @@ jobs:
           path: allure-results
           if-no-files-found: ignore
 
-      - name: Generate Allure report
+      - name: Generate HTML report
         if: always()
-        run: npx allure-commandline generate allure-results --clean -o allure-report
+        run: npm run report
 
       - name: Upload Allure report
         if: always()

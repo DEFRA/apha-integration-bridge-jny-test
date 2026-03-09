@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg } from '../../config/properties.js'
-import { token, responseCodes } from '../utils/token'
+import { token, responseCodes } from '../utils/token.js'
 import {
   getScenarioValue,
   resolveScenarioString
@@ -15,6 +15,22 @@ const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 let tokenGen = ''
 
 const resolveArg = (raw) => resolveScenarioString(raw)
+
+function makeApplicationReferenceNumber() {
+  const part1 = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0')
+  const part2 = (Date.now() % 10000).toString().padStart(4, '0')
+  return `TB-${part1}-${part2}`
+}
+
+function serialiseForError(value) {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
 
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
@@ -37,6 +53,7 @@ Given(
     const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
 
     const payload = getScenarioValue('caseCreate.validPayload')
+    payload.applicationReferenceNumber = makeApplicationReferenceNumber()
 
     let res
     try {
@@ -51,6 +68,8 @@ Given(
     }
 
     this.response = res
+    this.requestPayload = payload
+    this.requestUri = uri
   }
 )
 
@@ -78,6 +97,8 @@ Given(
     }
 
     this.response = res
+    this.requestPayload = payload
+    this.requestUri = uri
   }
 )
 
@@ -94,7 +115,12 @@ Then('the case API should return created response', async function () {
 
   const created = responseCodes?.created ?? responseCodes?.Created ?? 201
 
-  expect(res.status).to.equal(created)
+  expect(
+    res.status,
+    `Expected ${created} but got ${res.status}. URI=${this.requestUri || 'unknown'} ` +
+      `Response=${serialiseForError(res.data)} ` +
+      `Request=${serialiseForError(this.requestPayload)}`
+  ).to.equal(created)
 })
 
 Then(

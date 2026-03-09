@@ -13,8 +13,8 @@ environment="${ENV_VALUE}" npm test
 test_exit=$?
 echo "[entrypoint] npm test exit code: ${test_exit}"
 
-echo "[entrypoint] generating allure report…"
-npm run report || echo "[entrypoint] allure generate failed (continuing)"
+echo "[entrypoint] generating HTML report…"
+npm run report || echo "[entrypoint] report generation failed (continuing)"
 
 echo "[entrypoint] publishing report…"
 ./bin/publish-tests.sh
@@ -34,5 +34,5 @@ if [ -f FAILED ]; then
   exit 1
 fi
 
-echo "[entrypoint] test suite complete (wdio exit ${test_exit})"
+echo "[entrypoint] test suite complete (cucumber exit ${test_exit})"
 exit "${test_exit}"

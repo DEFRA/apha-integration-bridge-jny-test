@@ -59,24 +59,23 @@ export function makeUri(base, ...segments) {
 
 class Properties {
   constructor() {
-    const wdioCfg = global.browser?.config ?? {}
-
     // Determine env name
-    const envName =
-      (process.env.ENV_NAME && String(process.env.ENV_NAME)) ||
-      (wdioCfg.cucumberTag && String(wdioCfg.cucumberTag)) ||
-      ENV_DEFAULT
+    const envName = String(
+      process.env.ENV_NAME ||
+        process.env.environment ||
+        process.env.ENVIRONMENT ||
+        ENV_DEFAULT
+    ).trim()
 
     const picked = pickEnvConfig(envName)
 
-    // Choose baseUrl with priority: env file -> WDIO -> BASE_URL
-    const baseUrlCandidate =
-      picked.baseUrl ?? wdioCfg.baseUrl ?? process.env.BASE_URL
+    // Choose baseUrl with priority: BASE_URL override -> env file
+    const baseUrlCandidate = process.env.BASE_URL || picked.baseUrl
 
     const baseUrl = normaliseBaseUrl(baseUrlCandidate)
     if (!baseUrl) {
       throw new Error(
-        'Missing baseUrl. Set it in your env file, WDIO config.baseUrl, or BASE_URL env.'
+        'Missing baseUrl. Set it in your env file or BASE_URL env variable.'
       )
     }
 
@@ -95,7 +94,9 @@ class Properties {
 
     this.config = {
       envName,
-      isLocal: Boolean(wdioCfg.isLocal ?? process.env.IS_LOCAL === 'true'),
+      isLocal: /^(1|true|yes)$/i.test(
+        String(process.env.IS_LOCAL || '').trim()
+      ),
       baseUrl,
       cognito: {
         tokenEnv: picked.tokenEnv ?? '',

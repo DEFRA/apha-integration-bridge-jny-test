@@ -1,6 +1,6 @@
 # apha-integration-bridge-jny-test
 
-WebdriverIO/Cucumber journey tests for the APHA Integration Bridge API.
+Cucumber journey tests for the APHA Integration Bridge API.
 
 ## Contents
 
@@ -18,7 +18,6 @@ WebdriverIO/Cucumber journey tests for the APHA Integration Bridge API.
 
 - Node.js `>= 22.13.1` (see `.nvmrc`)
 - npm
-- Google Chrome (or a compatible remote WebDriver endpoint)
 
 Using `nvm`:
 
@@ -34,13 +33,13 @@ npm ci
 
 ## Running tests
 
-Run all features using the default config (`wdio.conf.js`):
+Run all features in the default environment (`dev`):
 
 ```bash
 npm test
 ```
 
-Run against a specific environment config:
+Run against a specific environment:
 
 ```bash
 npm run test:dev
@@ -52,8 +51,8 @@ npm run test:prod
 Notes:
 
 - Features are selected by Cucumber tag (`@dev`, `@test`, `@perf-test`, `@prod`).
-- `wdio.conf.js` uses a local ChromeDriver by default on `127.0.0.1:4444`.
-- Environment-specific WDIO configs switch to direct WebDriver protocol.
+- Tests execute as API calls (no browser/WebDriver dependency at runtime).
+- `bin/run-cucumber.mjs` resolves the environment and runs `cucumber-js`.
 
 ## Environment variables
 
@@ -66,18 +65,19 @@ Set the secret for the target environment before running tests:
 
 Optional variables:
 
-- `ENV_NAME` to override environment selection in property resolution.
+- `ENV_NAME` / `ENVIRONMENT` / `environment` to choose environment config.
+- `CUCUMBER_TAGS` to override tag expression (for example `@dev and not @wip`).
+- `BASE_URL` to override target API URL.
 - `COGNITO_CLIENT_ID` / `COGNITO_CLIENT_SECRET` to override env file values.
 - `COGNITO_DOMAIN` to override Cognito token domain.
 - `HTTP_PROXY` to route outbound requests through a proxy (non-local mode).
 - `IS_LOCAL=true` to force local/non-proxy token behaviour.
-- `CHROMEDRIVER_URL` / `CHROMEDRIVER_PORT` to target a remote/local driver host.
 
 ## Test reports
 
-Allure results are generated during test runs in `allure-results`.
+Test output JSON is written to `allure-results/cucumber-report.json`.
 
-Generate a local report:
+Generate a local HTML report:
 
 ```bash
 npm run report
@@ -93,7 +93,7 @@ If tests fail, a `FAILED` marker file is written for portal status integration.
 
 ## Scenario test data
 
-Feature files now live under `test/features/common` and use token placeholders instead of hardcoded values, for example:
+Feature files live under `test/features/common` and use token placeholders instead of hardcoded values, for example:
 
 ```gherkin
 | {{workorders.endpoint}} | {{workorders.startDate}} |
@@ -109,7 +109,7 @@ Token values are loaded from:
 - `test/data/scenario-values/prod.js`
 - `test/data/scenario-values/local.js`
 
-The active values file is selected from `ENV_NAME` (or WDIO environment tag) and merged over `base.js`.
+The active values file is selected from `ENV_NAME` and merged over `base.js`.
 
 ## CI/CD and CDP portal
 
@@ -126,7 +126,7 @@ Typical workflow:
 1. Add your service containers to `compose.yml`.
 2. Start the stack with `docker compose up -d`.
 3. Point test base URLs/token settings to your local services as needed.
-4. Run the WDIO suite with one of the npm test scripts above.
+4. Run the Cucumber suite with one of the npm test scripts above.
 
 ## Licence
 
