@@ -132,7 +132,10 @@ function printFriendlySummary(pathToReport) {
 
 const envName = pickEnvironment()
 const tags = normaliseTags(process.env.CUCUMBER_TAGS, envName)
-const nodeMajorVersion = Number.parseInt(process.versions.node.split('.')[0], 10)
+const nodeMajorVersion = Number.parseInt(
+  process.versions.node.split('.')[0],
+  10
+)
 
 fs.mkdirSync('allure-results', { recursive: true })
 
