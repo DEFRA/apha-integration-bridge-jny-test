@@ -90,13 +90,29 @@ class Properties {
 
     const picked = pickEnvConfig(envName)
 
-    // Choose baseUrl with priority: BASE_URL override -> env file
-    const baseUrlCandidate = process.env.BASE_URL || picked.baseUrl
+    // Choose baseUrl with priority:
+    // explicit test override vars -> opted-in legacy BASE_URL -> env file
+    const explicitBaseUrlOverride = String(
+      process.env.JOURNEY_BASE_URL ||
+        process.env.API_BASE_URL ||
+        process.env.TEST_BASE_URL ||
+        ''
+    ).trim()
+    const legacyBaseUrlOverride = String(process.env.BASE_URL || '').trim()
+    const allowLegacyBaseUrlOverride = isTruthyFlag(
+      process.env.ALLOW_BASE_URL_OVERRIDE ||
+        process.env.ALLOW_LEGACY_BASE_URL_OVERRIDE
+    )
+
+    const baseUrlCandidate =
+      explicitBaseUrlOverride ||
+      (allowLegacyBaseUrlOverride ? legacyBaseUrlOverride : '') ||
+      picked.baseUrl
 
     const baseUrl = normaliseBaseUrl(baseUrlCandidate)
     if (!baseUrl) {
       throw new Error(
-        'Missing baseUrl. Set it in your env file or BASE_URL env variable.'
+        'Missing baseUrl. Set it in env config or override with JOURNEY_BASE_URL/API_BASE_URL/TEST_BASE_URL.'
       )
     }
 
@@ -137,6 +153,11 @@ class Properties {
     const debugEnabled = isTruthyFlag(process.env.DEBUG)
 
     if (debugEnabled) {
+      const baseUrlSource = explicitBaseUrlOverride
+        ? 'JOURNEY_BASE_URL/API_BASE_URL/TEST_BASE_URL'
+        : allowLegacyBaseUrlOverride && legacyBaseUrlOverride
+          ? 'BASE_URL (legacy override enabled)'
+          : `config/env/${picked.name}.js`
       const secretSource = clientSecretFromOverride
         ? 'COGNITO_CLIENT_SECRET'
         : expectedSecretEnv || `config/env/${picked.name}.js`
@@ -150,6 +171,7 @@ class Properties {
       process.stdout.write(
         `[config] env=${envName} baseUrl=${baseUrl} tokenUrl=${tokenUrl} isLocal=${isTruthyFlag(process.env.IS_LOCAL)}\n`
       )
+      process.stdout.write(`[config] baseUrlSource=${baseUrlSource}\n`)
       process.stdout.write(
         `[config] cognito clientId=${maskMiddle(clientId)} (source=${idSource})\n`
       )

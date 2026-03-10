@@ -67,7 +67,8 @@ Optional variables:
 
 - `ENV_NAME` / `ENVIRONMENT` / `environment` to choose environment config.
 - `CUCUMBER_TAGS` to override tag expression (for example `@dev and not @wip`).
-- `BASE_URL` to override target API URL.
+- `JOURNEY_BASE_URL` / `API_BASE_URL` / `TEST_BASE_URL` to override target API URL.
+- `BASE_URL` can be used as a legacy override only when `ALLOW_BASE_URL_OVERRIDE=true` (to avoid CDP platform env collisions).
 - `COGNITO_CLIENT_ID` / `COGNITO_CLIENT_SECRET` to override env file values.
 - `COGNITO_DOMAIN` to override Cognito token domain.
 - `HTTP_PROXY` to route outbound requests through a proxy (non-local mode).
