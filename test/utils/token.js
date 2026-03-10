@@ -40,7 +40,26 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
   // Normalise to avoid double slashes if tokenUrl already ends with '/'
   const tokenEndpoint = `${String(tokenUrl).replace(/\/+$/, '')}/oauth2/token`
 
-  const response = await axios.post(tokenEndpoint, payload, axiosConfig)
+  let response
+  try {
+    response = await axios.post(tokenEndpoint, payload, axiosConfig)
+  } catch (error) {
+    const status = error?.response?.status
+    const body = error?.response?.data
+    const bodyString =
+      typeof body === 'string'
+        ? body
+        : body === undefined
+          ? ''
+          : JSON.stringify(body)
+
+    throw new Error(
+      `[auth] Failed to fetch Cognito token${status ? ` (HTTP ${status})` : ''} from ${tokenEndpoint}. ` +
+        'Check ENV_NAME and Cognito credentials (COGNITO_CLIENT_ID/COGNITO_CLIENT_SECRET or env-specific *_SECRET). ' +
+        `Response: ${bodyString.slice(0, 500)}`,
+      { cause: error }
+    )
+  }
 
   expect(response.status).to.equal(200)
   return response.data.access_token

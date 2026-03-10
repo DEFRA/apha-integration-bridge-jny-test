@@ -7,6 +7,12 @@ import prod from './env/prod.js'
 const ENV_DEFAULT = 'dev'
 const COGNITO_REGION = 'eu-west-2'
 const COGNITO_BASE = `auth.${COGNITO_REGION}.amazoncognito.com`
+const SECRET_ENV_BY_ENV = {
+  dev: 'DEV_SECRET',
+  test: 'TEST_SECRET',
+  'perf-test': 'PERF_SECRET',
+  prod: 'PROD_SECRET'
+}
 
 function pickEnvConfig(name) {
   const map = {
@@ -45,6 +51,11 @@ function buildTokenUrl({ tokenEnv }) {
     return `https://apha-integration-bridge-${tokenEnv}.${COGNITO_BASE}`
   }
   return `https://apha-integration-bridge.${COGNITO_BASE}`
+}
+
+function isUnsetOrPlaceholder(value) {
+  const cleaned = String(value ?? '').trim()
+  return !cleaned || /^REPLACE_ME/i.test(cleaned)
 }
 
 export function makeUri(base, ...segments) {
@@ -89,6 +100,22 @@ class Properties {
       picked.clientSecret ||
       ''
     ).trim()
+    const expectedSecretEnv = SECRET_ENV_BY_ENV[envName]
+
+    if (isUnsetOrPlaceholder(clientId)) {
+      throw new Error(
+        `[config] Missing Cognito client ID for "${envName}". Set COGNITO_CLIENT_ID or update config/env/${picked.name}.js`
+      )
+    }
+
+    if (isUnsetOrPlaceholder(clientSecret)) {
+      const expectedSecretHint = expectedSecretEnv
+        ? ` or ${expectedSecretEnv}`
+        : ''
+      throw new Error(
+        `[config] Missing Cognito client secret for "${envName}". Set COGNITO_CLIENT_SECRET${expectedSecretHint}.`
+      )
+    }
 
     const tokenUrl = buildTokenUrl(picked)
 
