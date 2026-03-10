@@ -58,6 +58,16 @@ function isUnsetOrPlaceholder(value) {
   return !cleaned || /^REPLACE_ME/i.test(cleaned)
 }
 
+function isTruthyFlag(value) {
+  return /^(1|true|yes)$/i.test(String(value ?? '').trim())
+}
+
+function maskMiddle(value) {
+  const cleaned = String(value ?? '').trim()
+  if (cleaned.length <= 8) return '*'.repeat(cleaned.length)
+  return `${cleaned.slice(0, 4)}...${cleaned.slice(-4)}`
+}
+
 export function makeUri(base, ...segments) {
   const clean = segments
     .filter((s) => s !== undefined && s !== null)
@@ -101,6 +111,12 @@ class Properties {
       ''
     ).trim()
     const expectedSecretEnv = SECRET_ENV_BY_ENV[envName]
+    const clientIdFromOverride = !!String(
+      process.env.COGNITO_CLIENT_ID || ''
+    ).trim()
+    const clientSecretFromOverride = !!String(
+      process.env.COGNITO_CLIENT_SECRET || ''
+    ).trim()
 
     if (isUnsetOrPlaceholder(clientId)) {
       throw new Error(
@@ -118,6 +134,32 @@ class Properties {
     }
 
     const tokenUrl = buildTokenUrl(picked)
+    const debugEnabled = isTruthyFlag(process.env.DEBUG)
+
+    if (debugEnabled) {
+      const secretSource = clientSecretFromOverride
+        ? 'COGNITO_CLIENT_SECRET'
+        : expectedSecretEnv || `config/env/${picked.name}.js`
+      const idSource = clientIdFromOverride
+        ? 'COGNITO_CLIENT_ID'
+        : `config/env/${picked.name}.js`
+      const expectedSecretPresent = expectedSecretEnv
+        ? !!String(process.env[expectedSecretEnv] || '').trim()
+        : false
+
+      process.stdout.write(
+        `[config] env=${envName} baseUrl=${baseUrl} tokenUrl=${tokenUrl} isLocal=${isTruthyFlag(process.env.IS_LOCAL)}\n`
+      )
+      process.stdout.write(
+        `[config] cognito clientId=${maskMiddle(clientId)} (source=${idSource})\n`
+      )
+      process.stdout.write(
+        `[config] cognito clientSecretLength=${clientSecret.length} (source=${secretSource})\n`
+      )
+      process.stdout.write(
+        `[config] env vars present: COGNITO_CLIENT_ID=${clientIdFromOverride}, COGNITO_CLIENT_SECRET=${clientSecretFromOverride}, ${expectedSecretEnv || 'EXPECTED_SECRET'}=${expectedSecretPresent}\n`
+      )
+    }
 
     this.config = {
       envName,
