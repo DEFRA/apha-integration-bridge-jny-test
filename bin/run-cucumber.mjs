@@ -8,7 +8,35 @@ const CUCUMBER_JSON = 'allure-results/cucumber-report.json'
 const LOADER_IMPORT =
   'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("esm-module-alias/loader", pathToFileURL("./"));'
 
-function pickEnvironment() {
+function parseRunnerArgs(rawArgs) {
+  let envNameOverride = ''
+  const cucumberArgs = []
+
+  for (let i = 0; i < rawArgs.length; i += 1) {
+    const arg = rawArgs[i]
+
+    if (arg.startsWith('--env=')) {
+      envNameOverride = arg.slice('--env='.length)
+      continue
+    }
+
+    if (arg === '--env') {
+      envNameOverride = rawArgs[i + 1] || ''
+      i += 1
+      continue
+    }
+
+    cucumberArgs.push(arg)
+  }
+
+  return { envNameOverride, cucumberArgs }
+}
+
+function pickEnvironment(envNameOverride) {
+  if (String(envNameOverride || '').trim()) {
+    return String(envNameOverride).trim()
+  }
+
   const fromEnv =
     process.env.ENV_NAME ||
     process.env.environment ||
@@ -130,7 +158,8 @@ function printFriendlySummary(pathToReport) {
   }
 }
 
-const envName = pickEnvironment()
+const { envNameOverride, cucumberArgs } = parseRunnerArgs(process.argv.slice(2))
+const envName = pickEnvironment(envNameOverride)
 const tags = normaliseTags(process.env.CUCUMBER_TAGS, envName)
 const nodeMajorVersion = Number.parseInt(
   process.versions.node.split('.')[0],
@@ -153,7 +182,7 @@ const args = [
   '--tags',
   tags,
   'test/features/**/*.feature',
-  ...process.argv.slice(2)
+  ...cucumberArgs
 ]
 
 const run = spawnSync('node', args, {

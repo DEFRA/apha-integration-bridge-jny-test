@@ -17,6 +17,11 @@ const escapeHtml = (value) =>
 
 const now = new Date().toISOString()
 
+function isScenarioElement(element) {
+  const type = String(element?.type || '').toLowerCase()
+  return type === 'scenario' || type === 'scenario_outline'
+}
+
 function readReportJson() {
   if (!fs.existsSync(inputPath)) return []
   const raw = fs.readFileSync(inputPath, 'utf8')
@@ -59,7 +64,9 @@ function summarise(features) {
 
   for (const feature of features) {
     const featureName = feature?.name || '(unnamed feature)'
-    const scenarios = Array.isArray(feature?.elements) ? feature.elements : []
+    const scenarios = (Array.isArray(feature?.elements) ? feature.elements : []).filter(
+      isScenarioElement
+    )
 
     for (const scenario of scenarios) {
       const status = deriveScenarioStatus(scenario?.steps || [])

@@ -51,7 +51,7 @@ jobs:
       - name: Run tests (npm run test:local)
         run: npm run test:local
 
-      - name: Upload Allure results
+      - name: Upload Cucumber JSON results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -63,7 +63,7 @@ jobs:
         if: always()
         run: npm run report
 
-      - name: Upload Allure report
+      - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
