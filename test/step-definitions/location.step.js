@@ -1,7 +1,7 @@
 import { Then } from '@cucumber/cucumber'
 import { expect } from 'chai'
 
-import { responseCodes } from '../utils/token'
+import { responseCodes } from '../utils/token.js'
 
 Then(/^the API should return the location details$/, async function () {
   const res = this.response

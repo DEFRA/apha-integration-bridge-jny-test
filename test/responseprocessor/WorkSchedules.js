@@ -1,4 +1,4 @@
-import WorkSchedule from './workschedule'
+import WorkSchedule from './workschedule.js'
 
 class WorkSchedules {
   constructor(jsonObject) {

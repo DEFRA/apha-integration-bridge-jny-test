@@ -12,7 +12,7 @@ import {
   responseCodes,
   methodNames,
   locationsKeys
-} from '../utils/token'
+} from '../utils/token.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito

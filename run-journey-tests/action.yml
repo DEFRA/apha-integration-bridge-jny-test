@@ -22,10 +22,10 @@ runs:
 
     - uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 22
         cache: npm
     - name: Setup the tests
-      run: npm i
+      run: npm ci
       shell: bash
     - name: Start docker compose
       shell: bash
@@ -44,7 +44,7 @@ runs:
         docker compose logs > logs.txt
         docker ps
       shell: bash
-    - name: Upload allure report
+    - name: Upload HTML report
       if: always()
       uses: actions/upload-artifact@v4
       with:

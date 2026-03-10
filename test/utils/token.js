@@ -16,7 +16,7 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
     client_secret: clientSecret
   })
 
-  // Decide local vs non-local based on WDIO config
+  // Decide local vs non-local mode from environment flags
   const isLocal = /^(1|true|yes)$/i.test(
     String(process.env.IS_LOCAL || '').trim()
   )
@@ -92,6 +92,7 @@ export const methodNames = {
 // These are different API response codes
 export const responseCodes = {
   ok: 200,
+  created: 201,
   badRequest: 400,
   notFound: 404
 }

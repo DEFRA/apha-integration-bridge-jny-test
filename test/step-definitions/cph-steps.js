@@ -1,12 +1,12 @@
 import { Then } from '@cucumber/cucumber'
 import { expect } from 'chai'
 
-import { Cph } from '../responseprocessor/cph'
+import { Cph } from '../responseprocessor/cph.js'
 import {
   strProcessor,
   holdingsendpointKeys,
   responseCodes
-} from '../utils/token'
+} from '../utils/token.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
 
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
