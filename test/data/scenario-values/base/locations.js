@@ -2,7 +2,7 @@ export default {
   endpoint: 'locations',
   validId: 'L153161',
   authId: 'L173630',
-  notFoundId: 'L1999',
+  notFoundId: 'L999999999999',
   noRouteId: '',
   invalidIds: {
     alphaSuffix: 'L1531614s',
