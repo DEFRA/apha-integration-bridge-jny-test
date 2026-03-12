@@ -46,6 +46,7 @@ function toResponseLike(error, uri) {
 
 Given(
   'the user submits a case create request with valid body',
+  { timeout: 30 * 1000 },
   async function () {
     tokenGen = await token(tokenUrl, clientId, secretId)
 
@@ -58,6 +59,7 @@ Given(
     let res
     try {
       res = await axios.post(uri, payload, {
+        timeout: 25 * 1000,
         headers: {
           Authorization: `Bearer ${tokenGen}`,
           'Content-Type': 'application/json'
@@ -75,6 +77,7 @@ Given(
 
 Given(
   'the user submits a case create request missing application reference',
+  { timeout: 30 * 1000 },
   async function () {
     tokenGen = await token(tokenUrl, clientId, secretId)
 
@@ -87,6 +90,7 @@ Given(
     let res
     try {
       res = await axios.post(uri, payload, {
+        timeout: 25 * 1000,
         headers: {
           Authorization: `Bearer ${tokenGen}`,
           'Content-Type': 'application/json'
