@@ -1,4 +1,4 @@
-import { Given, When, Then } from '@cucumber/cucumber'
+import { Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber'
 import axios from 'axios'
 import { expect } from 'chai'
 
@@ -16,6 +16,8 @@ import {
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
+
+setDefaultTimeout(30 * 1000)
 
 // Legacy fallback (kept so older steps don’t suddenly break if any still rely on module state)
 let id = ''
