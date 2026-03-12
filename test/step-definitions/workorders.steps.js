@@ -31,11 +31,95 @@ function toResponseLike(error, uri) {
 // Helpers
 const normalisePath = (p) => (p || '').replace(/^\/+/, '')
 
+function expectStringOrNull(object, key) {
+  expect(object).to.have.property(key)
+  const value = object[key]
+  if (value !== null) {
+    expect(value).to.be.a('string')
+  }
+}
+
 const parseQueryString = (urlOrPath) => {
   const str = String(urlOrPath || '')
   const idx = str.indexOf('?')
   const qs = idx >= 0 ? str.slice(idx + 1) : str.replace(/^\?/, '')
   return new URLSearchParams(qs)
+}
+
+function assertWorkorderShape(workorder) {
+  expect(workorder).to.have.property('type', 'workorders')
+  expect(workorder).to.have.property('id')
+  expect(workorder.id).to.be.a('string')
+
+  expectStringOrNull(workorder, 'activationDate')
+  expectStringOrNull(workorder, 'businessArea')
+  expectStringOrNull(workorder, 'workArea')
+  expectStringOrNull(workorder, 'country')
+  expectStringOrNull(workorder, 'aim')
+  expectStringOrNull(workorder, 'purpose')
+  expectStringOrNull(workorder, 'earliestActivityStartDate')
+  expectStringOrNull(workorder, 'species')
+  expectStringOrNull(workorder, 'phase')
+
+  expect(workorder).to.have.property('activities')
+  expect(workorder.activities).to.be.an('array')
+
+  for (const activity of workorder.activities) {
+    expect(activity).to.have.property('type', 'activities')
+    expect(activity).to.have.property('id')
+    expect(activity.id).to.be.a('string')
+    expectStringOrNull(activity, 'activityName')
+
+    if (activity.default !== undefined) {
+      expect(activity.default).to.be.a('boolean')
+    }
+    if (activity.sequenceNumber !== undefined) {
+      expect(activity.sequenceNumber).to.be.a('number')
+    }
+  }
+
+  expect(workorder).to.have.property('relationships')
+  expect(workorder.relationships).to.be.an('object')
+
+  const { relationships } = workorder
+  const assertRelationshipObjectData = (relationshipName, typeIfPresent) => {
+    expect(relationships).to.have.property(relationshipName)
+    expect(relationships[relationshipName]).to.have.property('data')
+
+    const relationshipData = relationships[relationshipName].data
+    if (relationshipData === null) return
+
+    expect(relationshipData).to.be.an('object')
+    if (typeIfPresent) {
+      expect(relationshipData).to.have.property('type', typeIfPresent)
+    } else {
+      expect(relationshipData).to.have.property('type')
+      expect(relationshipData.type).to.be.a('string')
+    }
+    expect(relationshipData).to.have.property('id')
+    expect(relationshipData.id).to.be.a('string')
+  }
+
+  const assertRelationshipArrayData = (relationshipName, itemType) => {
+    expect(relationships).to.have.property(relationshipName)
+    expect(relationships[relationshipName]).to.have.property('data')
+
+    const relationshipData = relationships[relationshipName].data
+    if (relationshipData === null) return
+
+    expect(relationshipData).to.be.an('array')
+    for (const item of relationshipData) {
+      expect(item).to.have.property('type', itemType)
+      expect(item).to.have.property('id')
+      expect(item.id).to.be.a('string')
+    }
+  }
+
+  assertRelationshipObjectData('customerOrOrganisation')
+  assertRelationshipObjectData('holding', 'holdings')
+  assertRelationshipArrayData('facilities', 'facilities')
+  assertRelationshipObjectData('location', 'locations')
+  assertRelationshipArrayData('livestockUnits', 'animal-commodities')
 }
 
 Given(
@@ -141,6 +225,39 @@ Given(
 )
 
 Then(
+  'the workorders API should return a validation error response',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.badRequest)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('message')
+    expect(res.data.message).to.be.a('string')
+    expect(res.data.message.trim().length).to.be.greaterThan(0)
+    expect(res.data).to.have.property('errors')
+    expect(res.data.errors).to.be.an('array')
+    expect(res.data.errors.length).to.be.greaterThan(0)
+
+    const firstError = res.data.errors[0]
+    expect(firstError).to.have.property('message')
+    expect(firstError.message).to.be.a('string')
+
+    if (res.data.code !== undefined) {
+      expect(res.data.code).to.be.a('string')
+    }
+    if (firstError.code !== undefined) {
+      expect(firstError.code).to.be.a('string')
+    }
+  }
+)
+
+Then(
   'the workorders API should return results for page {string} pageSize {string}',
   async function (page, pageSize) {
     const expectedPage = resolveArg(page)
@@ -162,23 +279,9 @@ Then(
 
     // Validate at least one item if any returned
     if (res.data.data.length > 0) {
-      const first = res.data.data[0]
-
-      expect(first).to.have.property('type')
-      expect(first.type).to.equal('workorders')
-
-      expect(first).to.have.property('id')
-      expect(first.id).to.be.a('string')
-      expect(first.id.trim().length).to.be.greaterThan(0)
-
-      expect(first).to.have.property('activationDate')
-      expect(first.activationDate).to.be.a('string')
-
-      expect(first).to.have.property('phase')
-      expect(first.phase).to.be.a('string')
-
-      expect(first).to.have.property('relationships')
-      expect(first.relationships).to.be.an('object')
+      for (const workorder of res.data.data) {
+        assertWorkorderShape(workorder)
+      }
     }
 
     // Links
