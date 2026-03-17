@@ -54,3 +54,27 @@ Feature: Workorders endpoint tests
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return a self link containing the same query params
+
+  Scenario Outline: 09 Verify successful response returns workorders filtered by country
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}" country "<country>"
+    When the request is processed by the system
+    Then the workorders API should return country-filtered results for country "<country>" page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    And the workorders API should return a self link containing the same query params
+
+    Examples:
+      | country                          |
+      | {{workorders.countries.scotland}} |
+      | {{workorders.countries.wales}}    |
+      | {{workorders.countries.england}}  |
+
+  Scenario: 10 Verify successful response defaults country to Scotland when country is omitted
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return default country results for country "{{workorders.countries.scotland}}" page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    And the workorders API should return a self link containing the same query params
+
+  Scenario: 11 Verify that bad request response (400) is returned for invalid country parameter
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}" country "{{workorders.invalidCountry.unsupported}}"
+    When the request is processed by the system
+    Then the workorders API should return a validation error response
+    And the workorders API should include a validation message for unsupported country value

@@ -15,6 +15,7 @@ let response = ''
 let query = null
 
 const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
+const supportedCountries = ['SCOTLAND', 'WALES', 'ENGLAND']
 
 function toResponseLike(error, uri) {
   if (error?.response) return error.response
@@ -44,6 +45,161 @@ const parseQueryString = (urlOrPath) => {
   const idx = str.indexOf('?')
   const qs = idx >= 0 ? str.slice(idx + 1) : str.replace(/^\?/, '')
   return new URLSearchParams(qs)
+}
+
+function normaliseCountry(country) {
+  return String(country || '')
+    .trim()
+    .toUpperCase()
+}
+
+function toUtcDayBounds(isoDate) {
+  const timestamp = Date.parse(isoDate)
+
+  expect(Number.isNaN(timestamp), `Invalid ISO date: ${isoDate}`).to.equal(
+    false
+  )
+
+  const date = new Date(timestamp)
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  const day = date.getUTCDate()
+
+  return {
+    start: Date.UTC(year, month, day, 0, 0, 0, 0),
+    end: Date.UTC(year, month, day, 23, 59, 59, 999)
+  }
+}
+
+function assertIsoDateWithinRange(dateValue, startDate, endDate) {
+  expect(dateValue, 'activationDate must be present').to.be.a('string')
+
+  const timestamp = Date.parse(dateValue)
+  const { start: startTimestamp } = toUtcDayBounds(startDate)
+  const { end: endTimestamp } = toUtcDayBounds(endDate)
+
+  expect(
+    Number.isNaN(timestamp),
+    `Invalid activationDate: ${dateValue}`
+  ).to.equal(false)
+
+  expect(timestamp).to.be.at.least(startTimestamp)
+  expect(timestamp).to.be.at.most(endTimestamp)
+}
+
+function assertAscendingActivationDates(workorders) {
+  let previousTimestamp = null
+
+  for (const workorder of workorders) {
+    const timestamp = Date.parse(workorder.activationDate)
+    expect(Number.isNaN(timestamp)).to.equal(false)
+
+    if (previousTimestamp !== null) {
+      expect(timestamp).to.be.at.least(previousTimestamp)
+    }
+
+    previousTimestamp = timestamp
+  }
+}
+
+async function sendWorkordersGetRequest({
+  world,
+  endpt,
+  page,
+  pageSize,
+  startDate,
+  endDate,
+  country,
+  tokenMode = 'valid'
+}) {
+  endpoint = resolveArg(endpt)
+
+  const cachedToken =
+    world.tokenGen || tokenGen || (await token(tokenUrl, clientId, secretId))
+
+  tokenGen = cachedToken
+
+  if (tokenMode === 'invalid') {
+    tokenGen = 'sss'
+  } else if (tokenMode === 'tampered') {
+    tokenGen = `${cachedToken}a`
+  }
+
+  const uri = makeUri(baseUrl, endpoint, '')
+  query = {
+    page: resolveArg(page),
+    pageSize: resolveArg(pageSize),
+    startActivationDate: resolveArg(startDate),
+    endActivationDate: resolveArg(endDate)
+  }
+
+  if (country !== undefined) {
+    query.country = resolveArg(country)
+  }
+
+  try {
+    response = await axios.get(uri, {
+      params: query,
+      headers: {
+        Authorization: `Bearer ${tokenGen}`,
+        Accept: 'application/json'
+      }
+    })
+  } catch (error) {
+    response = toResponseLike(error, uri)
+  }
+
+  world.response = response
+  world.endpoint = endpoint
+  world.query = query
+  world.tokenGen = tokenGen
+}
+
+function assertWorkordersResponseForCountry({
+  res,
+  expectedCountry,
+  expectedPage,
+  expectedPageSize,
+  expectedStartDate,
+  expectedEndDate
+}) {
+  if (res.status === 0) {
+    throw new Error(
+      `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+    )
+  }
+
+  expect(res.status).to.equal(responseCodes.ok)
+  expect(res.data).to.be.an('object')
+  expect(res.data).to.have.property('data')
+  expect(res.data.data).to.be.an('array')
+  expect(res.data.data.length).to.be.greaterThan(0)
+
+  for (const workorder of res.data.data) {
+    assertWorkorderShape(workorder)
+    expect(
+      normaliseCountry(workorder.country),
+      `Expected workorder ${workorder.id} to belong to ${expectedCountry}`
+    ).to.equal(normaliseCountry(expectedCountry))
+    assertIsoDateWithinRange(
+      workorder.activationDate,
+      expectedStartDate,
+      expectedEndDate
+    )
+  }
+
+  assertAscendingActivationDates(res.data.data)
+
+  expect(res.data).to.have.property('links')
+  expect(res.data.links).to.have.property('self')
+  expect(res.data.links).to.have.property('next')
+  expect(res.data.links).to.have.property('prev')
+
+  const qs = parseQueryString(res.data.links.self)
+  expect(qs.get('page')).to.equal(String(expectedPage))
+  expect(qs.get('pageSize')).to.equal(String(expectedPageSize))
+  expect(qs.get('startActivationDate')).to.equal(String(expectedStartDate))
+  expect(qs.get('endActivationDate')).to.equal(String(expectedEndDate))
 }
 
 function assertWorkorderShape(workorder) {
@@ -125,102 +281,59 @@ function assertWorkorderShape(workorder) {
 Given(
   'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string}',
   async function (endpt, page, pageSize, startDate, endDate) {
-    endpoint = resolveArg(endpt)
-
-    tokenGen =
-      this.tokenGen || tokenGen || (await token(tokenUrl, clientId, secretId))
-
-    const uri = makeUri(baseUrl, endpoint, '')
-    query = {
-      page: resolveArg(page),
-      pageSize: resolveArg(pageSize),
-      startActivationDate: resolveArg(startDate),
-      endActivationDate: resolveArg(endDate)
-    }
-
-    try {
-      response = await axios.get(uri, {
-        params: query,
-        headers: {
-          Authorization: `Bearer ${tokenGen}`,
-          Accept: 'application/json'
-        }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    this.response = response
-    this.endpoint = endpoint
-    this.query = query
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startDate,
+      endDate
+    })
   }
 )
 
 Given(
   'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string} using invalid token',
   async function (endpt, page, pageSize, startDate, endDate) {
-    endpoint = resolveArg(endpt)
-    tokenGen = 'sss'
-
-    const uri = makeUri(baseUrl, endpoint, '')
-    query = {
-      page: resolveArg(page),
-      pageSize: resolveArg(pageSize),
-      startActivationDate: resolveArg(startDate),
-      endActivationDate: resolveArg(endDate)
-    }
-
-    try {
-      response = await axios.get(uri, {
-        params: query,
-        headers: {
-          Authorization: `Bearer ${tokenGen}`,
-          Accept: 'application/json'
-        }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    this.response = response
-    this.endpoint = endpoint
-    this.query = query
-    this.tokenGen = tokenGen
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startDate,
+      endDate,
+      tokenMode: 'invalid'
+    })
   }
 )
 
 Given(
   'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string} using tampered token',
   async function (endpt, page, pageSize, startDate, endDate) {
-    endpoint = resolveArg(endpt)
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startDate,
+      endDate,
+      tokenMode: 'tampered'
+    })
+  }
+)
 
-    tokenGen = await token(tokenUrl, clientId, secretId)
-    tokenGen = tokenGen + 'a'
-
-    const uri = makeUri(baseUrl, endpoint, '')
-    query = {
-      page: resolveArg(page),
-      pageSize: resolveArg(pageSize),
-      startActivationDate: resolveArg(startDate),
-      endActivationDate: resolveArg(endDate)
-    }
-
-    try {
-      response = await axios.get(uri, {
-        params: query,
-        headers: {
-          Authorization: `Bearer ${tokenGen}`,
-          Accept: 'application/json'
-        }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    this.response = response
-    this.endpoint = endpoint
-    this.query = query
-    this.tokenGen = tokenGen
+Given(
+  'the user submits {string} workorders GET request with params page {string} pageSize {string} startActivationDate {string} endActivationDate {string} country {string}',
+  async function (endpt, page, pageSize, startDate, endDate, country) {
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startDate,
+      endDate,
+      country
+    })
   }
 )
 
@@ -298,6 +411,95 @@ Then(
 )
 
 Then(
+  'the workorders API should return country-filtered results for country {string} page {string} pageSize {string} startActivationDate {string} endActivationDate {string}',
+  async function (country, page, pageSize, startDate, endDate) {
+    const expectedCountry = resolveArg(country)
+    const expectedPage = resolveArg(page)
+    const expectedPageSize = resolveArg(pageSize)
+    const expectedStartDate = resolveArg(startDate)
+    const expectedEndDate = resolveArg(endDate)
+    const res = this.response || response
+
+    assertWorkordersResponseForCountry({
+      res,
+      expectedCountry,
+      expectedPage,
+      expectedPageSize,
+      expectedStartDate,
+      expectedEndDate
+    })
+
+    const qs = parseQueryString(res.data.links.self)
+    expect(qs.get('country')).to.equal(expectedCountry)
+  }
+)
+
+Then(
+  'the workorders API should return default country results for country {string} page {string} pageSize {string} startActivationDate {string} endActivationDate {string}',
+  async function (country, page, pageSize, startDate, endDate) {
+    const expectedCountry = resolveArg(country)
+    const expectedPage = resolveArg(page)
+    const expectedPageSize = resolveArg(pageSize)
+    const expectedStartDate = resolveArg(startDate)
+    const expectedEndDate = resolveArg(endDate)
+    const res = this.response || response
+
+    assertWorkordersResponseForCountry({
+      res,
+      expectedCountry,
+      expectedPage,
+      expectedPageSize,
+      expectedStartDate,
+      expectedEndDate
+    })
+
+    const qs = parseQueryString(res.data.links.self)
+    expect(qs.get('country')).to.equal(null)
+  }
+)
+
+Then(
+  'the workorders API should include a validation message for unsupported country value',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.badRequest)
+    expect(res.data).to.have.property('errors')
+    expect(res.data.errors).to.be.an('array')
+    expect(res.data.errors.length).to.be.greaterThan(0)
+
+    const errorMessages = [
+      res.data.message,
+      ...res.data.errors.map((error) => error?.message)
+    ]
+      .filter(Boolean)
+      .map((message) => String(message).toLowerCase())
+
+    expect(
+      errorMessages.some((message) => message.includes('country'))
+    ).to.equal(true)
+    expect(
+      errorMessages.some(
+        (message) =>
+          message.includes('not supported') ||
+          message.includes('unsupported') ||
+          message.includes('must be one of') ||
+          message.includes('allowed values') ||
+          supportedCountries.some((country) =>
+            message.includes(country.toLowerCase())
+          )
+      )
+    ).to.equal(true)
+  }
+)
+
+Then(
   'the workorders API should return a self link containing the same query params',
   async function () {
     const res = this.response || response
@@ -329,6 +531,9 @@ Then(
     )
     expect(qs.get('endActivationDate')).to.equal(
       String(expected.endActivationDate)
+    )
+    expect(qs.get('country')).to.equal(
+      expected.country ? String(expected.country) : null
     )
 
     expect(res.data.links).to.have.property('next')
