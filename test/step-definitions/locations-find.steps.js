@@ -258,6 +258,29 @@ Given(
 )
 
 Given(
+  'the user submits {string} locations find POST request with valid ids {string} mixed with missing id {string} page {string} pageSize {string}',
+  async function (endpt, validIds, missingId, page, pageSize) {
+    const resolvedValidIds = resolveValueArg(validIds)
+    const resolvedMissingId = resolveStringArg(missingId)
+
+    expect(
+      resolvedValidIds.length,
+      'Expected at least two valid location ids for missing-id pagination coverage'
+    ).to.be.at.least(2)
+
+    await sendLocationsFindRequest({
+      world: this,
+      endpt,
+      body: {
+        ids: [resolvedValidIds[0], resolvedMissingId, resolvedValidIds[1]]
+      },
+      page,
+      pageSize
+    })
+  }
+)
+
+Given(
   'the user submits {string} locations find POST request with ids {string} using invalid token',
   async function (endpt, ids) {
     await sendLocationsFindRequest({
@@ -444,6 +467,80 @@ Then(
         `Expected returned location id "${location.id}" to be in page subset`
       ).to.include(location.id)
       assertLocationShape(location)
+    }
+  }
+)
+
+Then(
+  'the locations find API should return paginated locations for valid ids {string} with missing id {string} on page {string} pageSize {string}',
+  async function (validIds, missingId, page, pageSize) {
+    const resolvedValidIds = resolveValueArg(validIds)
+    const resolvedMissingId = resolveStringArg(missingId)
+    const expectedPage = Number(resolveStringArg(page))
+    const expectedPageSize = Number(resolveStringArg(pageSize))
+    const res = this.response
+
+    assertSuccessResponseBasics(res)
+
+    const selfQuery = parseQueryString(res.data.links.self)
+    expect(selfQuery.get('page')).to.equal(String(expectedPage))
+    expect(selfQuery.get('pageSize')).to.equal(String(expectedPageSize))
+
+    expect(
+      resolvedValidIds.length,
+      'Expected at least two valid location ids for missing-id pagination coverage'
+    ).to.be.at.least(2)
+
+    expect(resolvedMissingId).to.be.a('string')
+
+    const expectedReturnedIdsByPage = {
+      1: [resolvedValidIds[0]],
+      2: [resolvedValidIds[1]]
+    }
+
+    const expectedReturnedIds = expectedReturnedIdsByPage[expectedPage] || []
+    const returnedIds = res.data.data.map((location) => location.id)
+
+    expect(returnedIds).to.deep.equal(expectedReturnedIds)
+
+    for (const location of res.data.data) {
+      expect(location.id).to.not.equal(resolvedMissingId)
+      assertLocationShape(location)
+    }
+  }
+)
+
+Then(
+  'the locations find API should return pagination links for missing-id paging on page {string} pageSize {string} with prev {string} and next {string}',
+  async function (page, pageSize, hasPrev, hasNext) {
+    const expectedPage = Number(resolveStringArg(page))
+    const expectedPageSize = resolveStringArg(pageSize)
+    const expectPrev = resolveStringArg(hasPrev) === 'true'
+    const expectNext = resolveStringArg(hasNext) === 'true'
+    const res = this.response
+
+    assertSuccessResponseBasics(res)
+
+    const selfQuery = parseQueryString(res.data.links.self)
+    expect(selfQuery.get('page')).to.equal(String(expectedPage))
+    expect(selfQuery.get('pageSize')).to.equal(expectedPageSize)
+
+    if (expectPrev) {
+      expect(res.data.links.prev).to.be.a('string')
+      const prevQuery = parseQueryString(res.data.links.prev)
+      expect(prevQuery.get('page')).to.equal(String(expectedPage - 1))
+      expect(prevQuery.get('pageSize')).to.equal(expectedPageSize)
+    } else {
+      expect(res.data.links.prev).to.equal(null)
+    }
+
+    if (expectNext) {
+      expect(res.data.links.next).to.be.a('string')
+      const nextQuery = parseQueryString(res.data.links.next)
+      expect(nextQuery.get('page')).to.equal(String(expectedPage + 1))
+      expect(nextQuery.get('pageSize')).to.equal(expectedPageSize)
+    } else {
+      expect(res.data.links.next).to.equal(null)
     }
   }
 )

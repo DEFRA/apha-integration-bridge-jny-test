@@ -103,6 +103,21 @@ function assertFindLinks(resLinks, expectedPath) {
   assertLinkPath(resLinks.next, 'next', false)
 }
 
+function assertPopulatedEarliestActivityStartDate(workorder) {
+  expect(workorder).to.have.property('earliestActivityStartDate')
+  expect(
+    workorder.earliestActivityStartDate,
+    `Expected workorder ${workorder.id} to include earliestActivityStartDate`
+  ).to.be.a('string')
+  expect(workorder.earliestActivityStartDate.trim().length).to.be.greaterThan(0)
+
+  const timestamp = Date.parse(workorder.earliestActivityStartDate)
+  expect(
+    Number.isNaN(timestamp),
+    `Invalid earliestActivityStartDate for workorder ${workorder.id}: ${workorder.earliestActivityStartDate}`
+  ).to.equal(false)
+}
+
 function assertWorkorderShape(workorder) {
   expect(workorder).to.have.property('type', 'workorders')
   expect(workorder).to.have.property('id')
@@ -306,6 +321,31 @@ Then(
 
     for (const workorder of res.data.data) {
       assertWorkorderShape(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders find API should return populated earliest activity start dates for all returned workorders',
+  async function () {
+    const res = this.response
+
+    if (!res) throw new Error('No response captured at all (unexpected).')
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertPopulatedEarliestActivityStartDate(workorder)
     }
   }
 )

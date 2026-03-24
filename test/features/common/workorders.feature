@@ -78,3 +78,16 @@ Feature: Workorders endpoint tests
     When the request is processed by the system
     Then the workorders API should return a validation error response
     And the workorders API should include a validation message for unsupported country value
+
+  Scenario: 12 Verify successful response filters workorders by full activation timestamp
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.timestampProbe.page}}" pageSize "{{workorders.timestampProbe.discoveryPageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    And the workorders API should capture a timestamp probe window from the response
+    And the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.timestampProbe.page}}" pageSize "{{workorders.timestampProbe.pageSize}}" using the captured timestamp probe window
+    And the request is processed by the system
+    Then the workorders API should return results filtered by the captured timestamp probe window
+
+  Scenario: 13 Verify successful response includes populated earliest activity start dates
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return populated earliest activity start dates for all returned workorders

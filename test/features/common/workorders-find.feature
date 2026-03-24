@@ -34,3 +34,8 @@ Feature: Workorders endpoint tests - find workorders in batch
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return matching workorders for ids "{{workordersFind.validIds}}"
+
+  Scenario: 06 Verify successful response includes populated earliest activity start dates
+    Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
+    When the request is processed by the system
+    Then the workorders find API should return populated earliest activity start dates for all returned workorders
