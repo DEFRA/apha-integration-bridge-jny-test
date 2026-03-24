@@ -10,6 +10,9 @@ export default {
     page: '1',
     pageSize: '1'
   },
+  paginationWithMissingScenario: {
+    pageSize: '2'
+  },
   invalidBodies: {
     emptyObject: {},
     idsNotArray: { ids: 'L1007035' },

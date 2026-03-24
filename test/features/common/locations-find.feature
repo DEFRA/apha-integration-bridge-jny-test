@@ -70,3 +70,14 @@ Feature: Locations endpoint tests - find locations in batch
     Given the user submits "{{locationsFind.endpoint}}" locations find POST request with ids "{{locationsFind.pagedIds}}" page "{{locationsFind.paginationScenario.page}}" pageSize "{{locationsFind.paginationScenario.pageSize}}"
     When the request is processed by the system
     Then the locations find API should return locations for ids "{{locationsFind.pagedIds}}" on page "{{locationsFind.paginationScenario.page}}" pageSize "{{locationsFind.paginationScenario.pageSize}}"
+
+  Scenario Outline: 11 Verify pagination continues when missing ids appear before later valid ids
+    Given the user submits "{{locationsFind.endpoint}}" locations find POST request with valid ids "{{locationsFind.validIds}}" mixed with missing id "{{locationsFind.missingId}}" page "<page>" pageSize "{{locationsFind.paginationWithMissingScenario.pageSize}}"
+    When the request is processed by the system
+    Then the locations find API should return paginated locations for valid ids "{{locationsFind.validIds}}" with missing id "{{locationsFind.missingId}}" on page "<page>" pageSize "{{locationsFind.paginationWithMissingScenario.pageSize}}"
+    And the locations find API should return pagination links for missing-id paging on page "<page>" pageSize "{{locationsFind.paginationWithMissingScenario.pageSize}}" with prev "<hasPrev>" and next "<hasNext>"
+
+    Examples:
+      | page | hasPrev | hasNext |
+      | 1    | false   | true    |
+      | 2    | true    | false   |

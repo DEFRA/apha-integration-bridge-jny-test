@@ -53,46 +53,51 @@ function normaliseCountry(country) {
     .toUpperCase()
 }
 
-function toUtcDayBounds(isoDate) {
-  const timestamp = Date.parse(isoDate)
+function parseIsoTimestamp(value, label = 'ISO date') {
+  const timestamp = Date.parse(value)
 
-  expect(Number.isNaN(timestamp), `Invalid ISO date: ${isoDate}`).to.equal(
-    false
+  expect(Number.isNaN(timestamp), `Invalid ${label}: ${value}`).to.equal(false)
+
+  return timestamp
+}
+
+function isSameUtcDay(leftTimestamp, rightTimestamp) {
+  const left = new Date(leftTimestamp)
+  const right = new Date(rightTimestamp)
+
+  return (
+    left.getUTCFullYear() === right.getUTCFullYear() &&
+    left.getUTCMonth() === right.getUTCMonth() &&
+    left.getUTCDate() === right.getUTCDate()
   )
+}
 
-  const date = new Date(timestamp)
-  const year = date.getUTCFullYear()
-  const month = date.getUTCMonth()
-  const day = date.getUTCDate()
-
-  return {
-    start: Date.UTC(year, month, day, 0, 0, 0, 0),
-    end: Date.UTC(year, month, day, 23, 59, 59, 999)
-  }
+function describeActivationDates(workorders) {
+  return workorders
+    .map((workorder) => `${workorder.id}:${workorder.activationDate ?? 'null'}`)
+    .slice(0, 10)
+    .join(', ')
 }
 
 function assertIsoDateWithinRange(dateValue, startDate, endDate) {
   expect(dateValue, 'activationDate must be present').to.be.a('string')
 
-  const timestamp = Date.parse(dateValue)
-  const { start: startTimestamp } = toUtcDayBounds(startDate)
-  const { end: endTimestamp } = toUtcDayBounds(endDate)
-
-  expect(
-    Number.isNaN(timestamp),
-    `Invalid activationDate: ${dateValue}`
-  ).to.equal(false)
+  const timestamp = parseIsoTimestamp(dateValue, 'activationDate')
+  const startTimestamp = parseIsoTimestamp(startDate, 'startActivationDate')
+  const endTimestamp = parseIsoTimestamp(endDate, 'endActivationDate')
 
   expect(timestamp).to.be.at.least(startTimestamp)
-  expect(timestamp).to.be.at.most(endTimestamp)
+  expect(timestamp).to.be.below(endTimestamp)
 }
 
 function assertAscendingActivationDates(workorders) {
   let previousTimestamp = null
 
   for (const workorder of workorders) {
-    const timestamp = Date.parse(workorder.activationDate)
-    expect(Number.isNaN(timestamp)).to.equal(false)
+    const timestamp = parseIsoTimestamp(
+      workorder.activationDate,
+      'activationDate'
+    )
 
     if (previousTimestamp !== null) {
       expect(timestamp).to.be.at.least(previousTimestamp)
@@ -100,6 +105,46 @@ function assertAscendingActivationDates(workorders) {
 
     previousTimestamp = timestamp
   }
+}
+
+function assertPopulatedEarliestActivityStartDate(workorder) {
+  expect(workorder).to.have.property('earliestActivityStartDate')
+  expect(
+    workorder.earliestActivityStartDate,
+    `Expected workorder ${workorder.id} to include earliestActivityStartDate`
+  ).to.be.a('string')
+  expect(workorder.earliestActivityStartDate.trim().length).to.be.greaterThan(0)
+  parseIsoTimestamp(
+    workorder.earliestActivityStartDate,
+    `earliestActivityStartDate for workorder ${workorder.id}`
+  )
+}
+
+function buildTimestampProbe(workorders) {
+  for (const workorder of workorders) {
+    if (typeof workorder.activationDate !== 'string') continue
+
+    const activationTimestamp = parseIsoTimestamp(
+      workorder.activationDate,
+      `activationDate for workorder ${workorder.id}`
+    )
+    const endTimestamp = activationTimestamp + 1
+
+    if (!isSameUtcDay(activationTimestamp, endTimestamp)) continue
+
+    const country = normaliseCountry(workorder.country)
+    return {
+      workorderId: workorder.id,
+      activationDate: workorder.activationDate,
+      startActivationDate: new Date(activationTimestamp).toISOString(),
+      endActivationDate: new Date(endTimestamp).toISOString(),
+      ...(supportedCountries.includes(country) ? { country } : {})
+    }
+  }
+
+  throw new Error(
+    `Unable to build a same-day timestamp probe window from the sampled workorders. This environment may not expose usable activation timestamps in the sampled data. Sampled activation dates: ${describeActivationDates(workorders)}`
+  )
 }
 
 async function sendWorkordersGetRequest({
@@ -394,7 +439,14 @@ Then(
     if (res.data.data.length > 0) {
       for (const workorder of res.data.data) {
         assertWorkorderShape(workorder)
+        assertIsoDateWithinRange(
+          workorder.activationDate,
+          this.query?.startActivationDate || query?.startActivationDate,
+          this.query?.endActivationDate || query?.endActivationDate
+        )
       }
+
+      assertAscendingActivationDates(res.data.data)
     }
 
     // Links
@@ -538,5 +590,139 @@ Then(
 
     expect(res.data.links).to.have.property('next')
     expect(res.data.links).to.have.property('prev')
+  }
+)
+
+Then(
+  'the workorders API should return populated earliest activity start dates for all returned workorders',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertPopulatedEarliestActivityStartDate(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders API should capture a timestamp probe window from the response',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(
+      res.data.data.length,
+      'Expected at least one workorder so a timestamp probe can be created'
+    ).to.be.greaterThan(0)
+
+    this.timestampProbe = buildTimestampProbe(res.data.data)
+  }
+)
+
+Given(
+  'the user submits {string} workorders GET request with params page {string} pageSize {string} using the captured timestamp probe window',
+  async function (endpt, page, pageSize) {
+    const timestampProbe = this.timestampProbe
+
+    if (!timestampProbe) {
+      throw new Error(
+        'No timestamp probe has been captured. Run the discovery request first.'
+      )
+    }
+
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startDate: timestampProbe.startActivationDate,
+      endDate: timestampProbe.endActivationDate,
+      country: timestampProbe.country
+    })
+  }
+)
+
+Then(
+  'the workorders API should return results filtered by the captured timestamp probe window',
+  async function () {
+    const timestampProbe = this.timestampProbe
+    const res = this.response || response
+
+    if (!timestampProbe) {
+      throw new Error('No timestamp probe has been captured for validation.')
+    }
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(
+      res.data.data.length,
+      `Expected at least one workorder within timestamp window ${timestampProbe.startActivationDate} to ${timestampProbe.endActivationDate}`
+    ).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertIsoDateWithinRange(
+        workorder.activationDate,
+        timestampProbe.startActivationDate,
+        timestampProbe.endActivationDate
+      )
+    }
+
+    assertAscendingActivationDates(res.data.data)
+
+    const matchedWorkorder = res.data.data.find(
+      (workorder) => workorder.id === timestampProbe.workorderId
+    )
+
+    expect(
+      matchedWorkorder,
+      `Expected timestamp probe workorder ${timestampProbe.workorderId} to be returned. Returned workorders: ${describeActivationDates(res.data.data)}`
+    ).to.not.equal(undefined)
+
+    expect(parseIsoTimestamp(matchedWorkorder.activationDate)).to.equal(
+      parseIsoTimestamp(timestampProbe.activationDate)
+    )
+
+    expect(res.data).to.have.property('links')
+    expect(res.data.links).to.have.property('self')
+
+    const qs = parseQueryString(res.data.links.self)
+    expect(qs.get('startActivationDate')).to.equal(
+      timestampProbe.startActivationDate
+    )
+    expect(qs.get('endActivationDate')).to.equal(
+      timestampProbe.endActivationDate
+    )
+    expect(qs.get('country')).to.equal(timestampProbe.country || null)
   }
 )
