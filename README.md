@@ -51,6 +51,7 @@ npm run test:prod
 Notes:
 
 - Features are selected by Cucumber tag (`@dev`, `@test`, `@perf-test`, `@prod`).
+- `test/features/common/case.feature` and `test/features/common/users-find-by-email.feature` are included by default for `dev` and excluded by default for `test`, `perf-test`, and `prod`.
 - Tests execute as API calls (no browser/WebDriver dependency at runtime).
 - `bin/run-cucumber.mjs` resolves the environment and runs `cucumber-js`.
 
@@ -67,6 +68,8 @@ Optional variables:
 
 - `ENV_NAME` / `ENVIRONMENT` / `environment` to choose environment config.
 - `CUCUMBER_TAGS` to override tag expression (for example `@dev and not @wip`).
+- `CUCUMBER_FEATURES` to provide a comma-separated feature list instead of the defaults.
+- `CUCUMBER_EXCLUDE_FEATURES` to remove a comma-separated list of feature files from the default selection.
 - `JOURNEY_BASE_URL` / `API_BASE_URL` / `TEST_BASE_URL` to override target API URL.
 - `BASE_URL` can be used as a legacy override only when `ALLOW_BASE_URL_OVERRIDE=true` (to avoid CDP platform env collisions).
 - `COGNITO_CLIENT_ID` / `COGNITO_CLIENT_SECRET` to override env file values.

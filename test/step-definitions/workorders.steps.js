@@ -107,17 +107,52 @@ function assertAscendingActivationDates(workorders) {
   }
 }
 
-function assertPopulatedEarliestActivityStartDate(workorder) {
+function assertEarliestActivityStartDateField(workorder) {
   expect(workorder).to.have.property('earliestActivityStartDate')
+  if (workorder.earliestActivityStartDate !== null) {
+    expect(
+      workorder.earliestActivityStartDate,
+      `Expected workorder ${workorder.id} to include earliestActivityStartDate as a string or null`
+    ).to.be.a('string')
+    expect(workorder.earliestActivityStartDate.trim().length).to.be.greaterThan(
+      0
+    )
+    parseIsoTimestamp(
+      workorder.earliestActivityStartDate,
+      `earliestActivityStartDate for workorder ${workorder.id}`
+    )
+  }
+}
+
+function assertTargetDateField(workorder) {
+  expect(workorder).to.have.property('targetDate')
+  if (workorder.targetDate !== null) {
+    expect(
+      workorder.targetDate,
+      `Expected workorder ${workorder.id} to include targetDate as a string or null`
+    ).to.be.a('string')
+    expect(workorder.targetDate.trim().length).to.be.greaterThan(0)
+    parseIsoTimestamp(
+      workorder.targetDate,
+      `targetDate for workorder ${workorder.id}`
+    )
+  }
+}
+
+function assertPopulatedWorkAreaAndSpecies(workorder) {
+  expect(workorder).to.have.property('workArea')
   expect(
-    workorder.earliestActivityStartDate,
-    `Expected workorder ${workorder.id} to include earliestActivityStartDate`
+    workorder.workArea,
+    `Expected workorder ${workorder.id} to include workArea`
   ).to.be.a('string')
-  expect(workorder.earliestActivityStartDate.trim().length).to.be.greaterThan(0)
-  parseIsoTimestamp(
-    workorder.earliestActivityStartDate,
-    `earliestActivityStartDate for workorder ${workorder.id}`
-  )
+  expect(workorder.workArea.trim().length).to.be.greaterThan(0)
+
+  expect(workorder).to.have.property('species')
+  expect(
+    workorder.species,
+    `Expected workorder ${workorder.id} to include species`
+  ).to.be.a('string')
+  expect(workorder.species.trim().length).to.be.greaterThan(0)
 }
 
 function buildTimestampProbe(workorders) {
@@ -259,6 +294,7 @@ function assertWorkorderShape(workorder) {
   expectStringOrNull(workorder, 'aim')
   expectStringOrNull(workorder, 'purpose')
   expectStringOrNull(workorder, 'earliestActivityStartDate')
+  expectStringOrNull(workorder, 'targetDate')
   expectStringOrNull(workorder, 'species')
   expectStringOrNull(workorder, 'phase')
 
@@ -594,7 +630,7 @@ Then(
 )
 
 Then(
-  'the workorders API should return populated earliest activity start dates for all returned workorders',
+  'the workorders API should return earliest activity start date field for all returned workorders',
   async function () {
     const res = this.response || response
 
@@ -612,7 +648,55 @@ Then(
 
     for (const workorder of res.data.data) {
       assertWorkorderShape(workorder)
-      assertPopulatedEarliestActivityStartDate(workorder)
+      assertEarliestActivityStartDateField(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders API should return target date field for all returned workorders',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertTargetDateField(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders API should return populated work area and species values for all returned workorders',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertPopulatedWorkAreaAndSpecies(workorder)
     }
   }
 )

@@ -87,7 +87,17 @@ Feature: Workorders endpoint tests
     And the request is processed by the system
     Then the workorders API should return results filtered by the captured timestamp probe window
 
-  Scenario: 13 Verify successful response includes populated earliest activity start dates
+  Scenario: 13 Verify successful response includes earliest activity start date field
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
-    Then the workorders API should return populated earliest activity start dates for all returned workorders
+    Then the workorders API should return earliest activity start date field for all returned workorders
+
+  Scenario: 14 Verify successful response includes populated work area and species values
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return populated work area and species values for all returned workorders
+
+  Scenario: 15 Verify successful response includes target date field
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return target date field for all returned workorders
