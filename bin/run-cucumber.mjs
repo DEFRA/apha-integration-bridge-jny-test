@@ -1,12 +1,23 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs'
+import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 const CUCUMBER_BIN = 'node_modules/@cucumber/cucumber/bin/cucumber.js'
 const CUCUMBER_JSON = 'allure-results/cucumber-report.json'
 const LOADER_IMPORT =
   'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("esm-module-alias/loader", pathToFileURL("./"));'
+const DEFAULT_FEATURE_ROOT = 'test/features'
+const DEV_ONLY_FEATURES = [
+  'test/features/common/case.feature',
+  'test/features/common/users-find-by-email.feature'
+]
+const EXCLUDED_FEATURES_BY_ENV = {
+  test: DEV_ONLY_FEATURES,
+  'perf-test': DEV_ONLY_FEATURES,
+  prod: DEV_ONLY_FEATURES
+}
 
 function parseRunnerArgs(rawArgs) {
   let envNameOverride = ''
@@ -56,6 +67,78 @@ function normaliseTags(rawTags, envName) {
   if (/[()]/.test(raw)) return raw
 
   return `@${raw}`
+}
+
+function parseList(rawValue) {
+  return String(rawValue || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function normaliseFilePath(filePath) {
+  return filePath.replace(/\\/g, '/')
+}
+
+function listFeatureFiles(rootDir) {
+  const featureFiles = []
+  const entries = fs.readdirSync(rootDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const resolvedPath = path.join(rootDir, entry.name)
+    if (entry.isDirectory()) {
+      featureFiles.push(...listFeatureFiles(resolvedPath))
+      continue
+    }
+
+    if (entry.isFile() && entry.name.endsWith('.feature')) {
+      featureFiles.push(normaliseFilePath(resolvedPath))
+    }
+  }
+
+  return featureFiles.sort()
+}
+
+function splitFeatureTargets(rawArgs) {
+  const featureTargets = []
+  const passthroughArgs = []
+
+  for (const arg of rawArgs) {
+    if (arg.includes('.feature')) {
+      featureTargets.push(arg)
+      continue
+    }
+
+    passthroughArgs.push(arg)
+  }
+
+  return { featureTargets, passthroughArgs }
+}
+
+function resolveFeatureTargets(envName, explicitFeatureTargets) {
+  if (explicitFeatureTargets.length > 0) {
+    return explicitFeatureTargets
+  }
+
+  const includeOverride = parseList(process.env.CUCUMBER_FEATURES)
+  const excludeOverride = new Set(
+    parseList(process.env.CUCUMBER_EXCLUDE_FEATURES).map(normaliseFilePath)
+  )
+
+  if (includeOverride.length > 0) {
+    return includeOverride.filter(
+      (featurePath) => !excludeOverride.has(normaliseFilePath(featurePath))
+    )
+  }
+
+  const envExclusions = EXCLUDED_FEATURES_BY_ENV[envName] || []
+  const excludedFeatures = new Set(
+    [...envExclusions, ...excludeOverride].map(normaliseFilePath)
+  )
+
+  return listFeatureFiles(DEFAULT_FEATURE_ROOT).filter(
+    (featurePath) => !excludedFeatures.has(featurePath)
+  )
 }
 
 function collectSummaryFromJson(pathToReport) {
@@ -161,6 +244,9 @@ function printFriendlySummary(pathToReport) {
 const { envNameOverride, cucumberArgs } = parseRunnerArgs(process.argv.slice(2))
 const envName = pickEnvironment(envNameOverride)
 const tags = normaliseTags(process.env.CUCUMBER_TAGS, envName)
+const { featureTargets: explicitFeatureTargets, passthroughArgs: cucumberPassthroughArgs } =
+  splitFeatureTargets(cucumberArgs)
+const featureTargets = resolveFeatureTargets(envName, explicitFeatureTargets)
 const nodeMajorVersion = Number.parseInt(
   process.versions.node.split('.')[0],
   10
@@ -181,8 +267,8 @@ const args = [
   `json:${CUCUMBER_JSON}`,
   '--tags',
   tags,
-  'test/features/**/*.feature',
-  ...cucumberArgs
+  ...featureTargets,
+  ...cucumberPassthroughArgs
 ]
 
 const run = spawnSync('node', args, {

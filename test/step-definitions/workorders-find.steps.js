@@ -103,19 +103,40 @@ function assertFindLinks(resLinks, expectedPath) {
   assertLinkPath(resLinks.next, 'next', false)
 }
 
-function assertPopulatedEarliestActivityStartDate(workorder) {
+function assertEarliestActivityStartDateField(workorder) {
   expect(workorder).to.have.property('earliestActivityStartDate')
-  expect(
-    workorder.earliestActivityStartDate,
-    `Expected workorder ${workorder.id} to include earliestActivityStartDate`
-  ).to.be.a('string')
-  expect(workorder.earliestActivityStartDate.trim().length).to.be.greaterThan(0)
+  if (workorder.earliestActivityStartDate !== null) {
+    expect(
+      workorder.earliestActivityStartDate,
+      `Expected workorder ${workorder.id} to include earliestActivityStartDate as a string or null`
+    ).to.be.a('string')
+    expect(workorder.earliestActivityStartDate.trim().length).to.be.greaterThan(
+      0
+    )
 
-  const timestamp = Date.parse(workorder.earliestActivityStartDate)
-  expect(
-    Number.isNaN(timestamp),
-    `Invalid earliestActivityStartDate for workorder ${workorder.id}: ${workorder.earliestActivityStartDate}`
-  ).to.equal(false)
+    const timestamp = Date.parse(workorder.earliestActivityStartDate)
+    expect(
+      Number.isNaN(timestamp),
+      `Invalid earliestActivityStartDate for workorder ${workorder.id}: ${workorder.earliestActivityStartDate}`
+    ).to.equal(false)
+  }
+}
+
+function assertTargetDateField(workorder) {
+  expect(workorder).to.have.property('targetDate')
+  if (workorder.targetDate !== null) {
+    expect(
+      workorder.targetDate,
+      `Expected workorder ${workorder.id} to include targetDate as a string or null`
+    ).to.be.a('string')
+    expect(workorder.targetDate.trim().length).to.be.greaterThan(0)
+
+    const timestamp = Date.parse(workorder.targetDate)
+    expect(
+      Number.isNaN(timestamp),
+      `Invalid targetDate for workorder ${workorder.id}: ${workorder.targetDate}`
+    ).to.equal(false)
+  }
 }
 
 function assertWorkorderShape(workorder) {
@@ -130,6 +151,7 @@ function assertWorkorderShape(workorder) {
   expectStringOrNull(workorder, 'aim')
   expectStringOrNull(workorder, 'purpose')
   expectStringOrNull(workorder, 'earliestActivityStartDate')
+  expectStringOrNull(workorder, 'targetDate')
   expectStringOrNull(workorder, 'species')
   expectStringOrNull(workorder, 'phase')
 
@@ -326,7 +348,7 @@ Then(
 )
 
 Then(
-  'the workorders find API should return populated earliest activity start dates for all returned workorders',
+  'the workorders find API should return earliest activity start date field for all returned workorders',
   async function () {
     const res = this.response
 
@@ -345,7 +367,32 @@ Then(
 
     for (const workorder of res.data.data) {
       assertWorkorderShape(workorder)
-      assertPopulatedEarliestActivityStartDate(workorder)
+      assertEarliestActivityStartDateField(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders find API should return target date field for all returned workorders',
+  async function () {
+    const res = this.response
+
+    if (!res) throw new Error('No response captured at all (unexpected).')
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertTargetDateField(workorder)
     }
   }
 )

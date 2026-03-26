@@ -13,10 +13,10 @@ export default {
     }
   },
   workordersFind: {
-    validIds: ['WS-219690', 'WS-219691'],
+    validIds: ['WS-72034', 'WS-70782'],
     invalidBodies: {
-      idsNotArray: { ids: 'WS-219690' },
-      idsMissing: { workOrderIds: ['WS-219690'] }
+      idsNotArray: { ids: 'WS-72034' },
+      idsMissing: { workOrderIds: ['WS-72034'] }
     }
   },
   organisationsFind: {
