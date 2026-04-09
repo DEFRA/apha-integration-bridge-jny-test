@@ -8,6 +8,10 @@ import {
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
+import {
+  expectInternalCountryCode,
+  expectStringOrNullProperty
+} from '../utils/address-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -109,7 +113,8 @@ function assertLocationShape(location) {
   expectStringOrNull(location.address, 'locality')
   expectStringOrNull(location.address, 'town')
   expectStringOrNull(location.address, 'postcode')
-  expectStringOrNull(location.address, 'countryCode')
+  expectStringOrNullProperty(location.address, 'county')
+  expectInternalCountryCode(location.address)
 
   expect(location).to.have.property('livestockUnits')
   expect(location.livestockUnits).to.be.an('array')
