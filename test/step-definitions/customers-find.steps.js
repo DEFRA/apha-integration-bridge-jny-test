@@ -9,8 +9,8 @@ import {
   resolveScenarioValue
 } from '../utils/scenario-data.js'
 import {
-  expectInternalCountryCode,
-  expectStringOrNullProperty
+  expectCountyDescriptiveNameOrNull,
+  expectInternalCountryCode
 } from '../utils/address-assertions.js'
 
 const baseUrl = cfg.baseUrl
@@ -276,7 +276,7 @@ Then(
         expect(address).to.have.property('locality')
         expect(address).to.have.property('town')
         expect(address).to.have.property('postcode')
-        expectStringOrNullProperty(address, 'county')
+        expectCountyDescriptiveNameOrNull(address)
         expectInternalCountryCode(address)
         expect(address).to.have.property('isPreferred')
         expect(address.isPreferred).to.be.a('boolean')

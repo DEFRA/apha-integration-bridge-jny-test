@@ -9,8 +9,8 @@ import {
   resolveScenarioValue
 } from '../utils/scenario-data.js'
 import {
-  expectInternalCountryCode,
-  expectStringOrNullProperty
+  expectCountyDescriptiveNameOrNull,
+  expectInternalCountryCode
 } from '../utils/address-assertions.js'
 
 const baseUrl = cfg.baseUrl
@@ -246,7 +246,7 @@ Then(
       expect(organisation.address).to.have.property('locality')
       expect(organisation.address).to.have.property('town')
       expect(organisation.address).to.have.property('postcode')
-      expectStringOrNullProperty(organisation.address, 'county')
+      expectCountyDescriptiveNameOrNull(organisation.address)
       expectInternalCountryCode(organisation.address)
 
       expect(organisation).to.have.property('contactDetails')

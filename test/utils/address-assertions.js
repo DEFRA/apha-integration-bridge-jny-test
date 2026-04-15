@@ -18,6 +18,28 @@ export function expectStringOrNullProperty(object, key) {
   expect(object[key]).to.be.a('string')
 }
 
+export function expectCountyDescriptiveNameOrNull(object, key = 'county') {
+  expect(object).to.have.property(key)
+
+  if (object[key] === null) {
+    return
+  }
+
+  expect(object[key]).to.be.a('string')
+
+  const county = object[key].trim()
+
+  expect(county, `${key} should be populated when provided`).to.not.equal('')
+  expect(
+    county,
+    `${key} should be a descriptive name, not a numeric county code`
+  ).to.not.match(/^\d+$/)
+  expect(
+    county,
+    `${key} should include letters for a descriptive county name`
+  ).to.match(/[A-Za-z]/)
+}
+
 export function expectInternalCountryCode(object, key = 'countryCode') {
   expect(object).to.have.property(key)
 
