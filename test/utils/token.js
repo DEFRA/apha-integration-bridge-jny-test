@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { expect } from 'chai'
 
-export const token = async (tokenUrl, clientId, clientSecret) => {
+export const token = async (tokenUrl, clientId, clientSecret, options = {}) => {
   const clientCredentials = `${clientId}:${clientSecret}`
   const encodedCredentials = Buffer.from(clientCredentials).toString('base64')
 
@@ -15,6 +15,9 @@ export const token = async (tokenUrl, clientId, clientSecret) => {
     client_id: clientId,
     client_secret: clientSecret
   })
+  if (options.scope) {
+    payload.set('scope', options.scope)
+  }
 
   // Decide local vs non-local mode from environment flags
   const isLocal = /^(1|true|yes)$/i.test(
