@@ -44,3 +44,13 @@ Feature: Workorders endpoint tests - find workorders in batch
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return target date field for all returned workorders
+
+  Scenario: 08 Verify successful response includes perform activity and workbasket fields for activities
+    Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
+    When the request is processed by the system
+    Then the workorders find API should return perform activity and workbasket fields for all returned activities
+
+  Scenario: 09 Verify successful response orders activities by ascending sequence number
+    Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
+    When the request is processed by the system
+    Then the workorders find API should return activities ordered by ascending sequence number for all returned workorders

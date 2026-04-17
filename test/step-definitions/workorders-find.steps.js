@@ -8,6 +8,11 @@ import {
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
+import {
+  assertActivitiesOrderedBySequenceNumber,
+  assertActivitiesHaveOperationalDetails,
+  assertWorkorderActivityShape
+} from '../utils/workorder-activity-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -159,16 +164,7 @@ function assertWorkorderShape(workorder) {
   expect(workorder.activities).to.be.an('array')
 
   for (const activity of workorder.activities) {
-    expect(activity).to.have.property('type', 'activities')
-    expect(activity).to.have.property('id')
-    expect(activity.id).to.be.a('string')
-    expectStringOrNull(activity, 'activityName')
-    if (activity.default !== undefined) {
-      expect(activity.default).to.be.a('boolean')
-    }
-    if (activity.sequenceNumber !== undefined) {
-      expect(activity.sequenceNumber).to.be.a('number')
-    }
+    assertWorkorderActivityShape(activity)
   }
 
   expect(workorder).to.have.property('relationships')
@@ -394,5 +390,57 @@ Then(
       assertWorkorderShape(workorder)
       assertTargetDateField(workorder)
     }
+  }
+)
+
+Then(
+  'the workorders find API should return perform activity and workbasket fields for all returned activities',
+  async function () {
+    const res = this.response
+
+    if (!res) throw new Error('No response captured at all (unexpected).')
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+    }
+
+    assertActivitiesHaveOperationalDetails(res.data.data)
+  }
+)
+
+Then(
+  'the workorders find API should return activities ordered by ascending sequence number for all returned workorders',
+  async function () {
+    const res = this.response
+
+    if (!res) throw new Error('No response captured at all (unexpected).')
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+    }
+
+    assertActivitiesOrderedBySequenceNumber(res.data.data)
   }
 )
