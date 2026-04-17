@@ -101,3 +101,13 @@ Feature: Workorders endpoint tests
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return target date field for all returned workorders
+
+  Scenario: 16 Verify successful response includes perform activity and workbasket fields for activities
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return perform activity and workbasket fields for all returned activities
+
+  Scenario: 17 Verify successful response orders activities by ascending sequence number
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return activities ordered by ascending sequence number for all returned workorders
