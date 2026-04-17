@@ -50,47 +50,6 @@ function cognitoShapedJwtThatIsNotSignedByCognito() {
   return `${encodeJwtPart(header)}.${encodeJwtPart(payload)}.invalid-signature`
 }
 
-async function insufficientScopeToken() {
-  const insufficientScopeClientId = String(
-    process.env.COGNITO_INSUFFICIENT_SCOPE_CLIENT_ID || ''
-  ).trim()
-  const insufficientScopeClientSecret = String(
-    process.env.COGNITO_INSUFFICIENT_SCOPE_CLIENT_SECRET || ''
-  ).trim()
-  const insufficientScope = String(
-    process.env.COGNITO_INSUFFICIENT_SCOPE || ''
-  ).trim()
-
-  if (!insufficientScopeClientId || !insufficientScopeClientSecret) {
-    throw new Error(
-      'Set COGNITO_INSUFFICIENT_SCOPE_CLIENT_ID and COGNITO_INSUFFICIENT_SCOPE_CLIENT_SECRET to run the @auth-scope scenario.'
-    )
-  }
-
-  return token(
-    tokenUrl,
-    insufficientScopeClientId,
-    insufficientScopeClientSecret,
-    {
-      scope: insufficientScope || undefined
-    }
-  )
-}
-
-function expiredCognitoToken() {
-  const expiredToken = String(
-    process.env.COGNITO_EXPIRED_ACCESS_TOKEN || ''
-  ).trim()
-
-  if (!expiredToken) {
-    throw new Error(
-      'Set COGNITO_EXPIRED_ACCESS_TOKEN to run the @auth-expired scenario.'
-    )
-  }
-
-  return expiredToken
-}
-
 function errorMessageFrom(data) {
   if (typeof data === 'string') return data
   return data?.message ?? data?.Message ?? data?.error ?? data?.errorMessage
@@ -110,23 +69,24 @@ async function sendAuthorisedLocationsFindRequest({
     'Content-Type': 'application/json'
   }
 
-  if (normalisedAuthCase === 'valid cognito jwt') {
-    const tokenGen =
-      world.tokenGen || (await token(tokenUrl, clientId, secretId))
-    headers.Authorization = `Bearer ${tokenGen}`
-    world.tokenGen = tokenGen
-  } else if (normalisedAuthCase === 'malformed jwt') {
-    headers.Authorization = 'Bearer not-a-jwt'
-  } else if (normalisedAuthCase === 'jwt not signed by cognito') {
-    headers.Authorization = `Bearer ${cognitoShapedJwtThatIsNotSignedByCognito()}`
-  } else if (
-    normalisedAuthCase === 'valid cognito jwt without required scope'
-  ) {
-    headers.Authorization = `Bearer ${await insufficientScopeToken()}`
-  } else if (normalisedAuthCase === 'expired cognito jwt') {
-    headers.Authorization = `Bearer ${expiredCognitoToken()}`
-  } else if (normalisedAuthCase !== 'missing authorization header') {
-    throw new Error(`Unsupported auth case "${authCase}"`)
+  switch (normalisedAuthCase) {
+    case 'valid cognito jwt': {
+      const tokenGen =
+        world.tokenGen || (await token(tokenUrl, clientId, secretId))
+      headers.Authorization = `Bearer ${tokenGen}`
+      world.tokenGen = tokenGen
+      break
+    }
+    case 'malformed jwt':
+      headers.Authorization = 'Bearer not-a-jwt'
+      break
+    case 'jwt not signed by cognito':
+      headers.Authorization = `Bearer ${cognitoShapedJwtThatIsNotSignedByCognito()}`
+      break
+    case 'missing authorization header':
+      break
+    default:
+      throw new Error(`Unsupported auth case "${authCase}"`)
   }
 
   try {
