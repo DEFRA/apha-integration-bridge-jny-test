@@ -2,6 +2,7 @@ export default {
   endpoint: 'workorders',
   page: '1',
   pageSize: '30',
+  maxPageSize: '50',
   timestampProbe: {
     page: '1',
     discoveryPageSize: '50',
