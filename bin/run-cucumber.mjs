@@ -9,15 +9,10 @@ const CUCUMBER_JSON = 'allure-results/cucumber-report.json'
 const LOADER_IMPORT =
   'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("esm-module-alias/loader", pathToFileURL("./"));'
 const DEFAULT_FEATURE_ROOT = 'test/features'
-const DEV_ONLY_FEATURES = [
+const CASE_MANAGEMENT_FEATURES = [
   'test/features/common/case.feature',
   'test/features/common/users-find-by-email.feature'
 ]
-const EXCLUDED_FEATURES_BY_ENV = {
-  test: DEV_ONLY_FEATURES,
-  'perf-test': DEV_ONLY_FEATURES,
-  prod: DEV_ONLY_FEATURES
-}
 
 function parseRunnerArgs(rawArgs) {
   let envNameOverride = ''
@@ -131,7 +126,8 @@ function resolveFeatureTargets(envName, explicitFeatureTargets) {
     )
   }
 
-  const envExclusions = EXCLUDED_FEATURES_BY_ENV[envName] || []
+  const caseManagementEnabled = process.env.CASE_MANAGEMENT_ENABLED === 'true'
+  const envExclusions = caseManagementEnabled ? [] : CASE_MANAGEMENT_FEATURES
   const excludedFeatures = new Set(
     [...envExclusions, ...excludeOverride].map(normaliseFilePath)
   )
@@ -244,8 +240,10 @@ function printFriendlySummary(pathToReport) {
 const { envNameOverride, cucumberArgs } = parseRunnerArgs(process.argv.slice(2))
 const envName = pickEnvironment(envNameOverride)
 const tags = normaliseTags(process.env.CUCUMBER_TAGS, envName)
-const { featureTargets: explicitFeatureTargets, passthroughArgs: cucumberPassthroughArgs } =
-  splitFeatureTargets(cucumberArgs)
+const {
+  featureTargets: explicitFeatureTargets,
+  passthroughArgs: cucumberPassthroughArgs
+} = splitFeatureTargets(cucumberArgs)
 const featureTargets = resolveFeatureTargets(envName, explicitFeatureTargets)
 const nodeMajorVersion = Number.parseInt(
   process.versions.node.split('.')[0],

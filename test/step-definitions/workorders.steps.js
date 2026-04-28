@@ -465,6 +465,7 @@ Then(
     expect(res.data).to.be.an('object')
     expect(res.data).to.have.property('data')
     expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.at.most(Number(expectedPageSize))
 
     // Validate at least one item if any returned
     if (res.data.data.length > 0) {
