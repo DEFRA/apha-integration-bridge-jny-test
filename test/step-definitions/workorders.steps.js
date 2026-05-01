@@ -8,7 +8,9 @@ import { resolveScenarioString } from '../utils/scenario-data.js'
 import {
   assertActivitiesOrderedBySequenceNumber,
   assertActivitiesHaveOperationalDetails,
-  assertWorkorderActivityShape
+  assertActivitiesHaveStatus,
+  assertWorkorderActivityShape,
+  assertWorkorderHasStatus
 } from '../utils/workorder-activity-assertions.js'
 
 const baseUrl = cfg.baseUrl
@@ -302,6 +304,7 @@ function assertWorkorderShape(workorder) {
   expectStringOrNull(workorder, 'targetDate')
   expectStringOrNull(workorder, 'species')
   expectStringOrNull(workorder, 'phase')
+  assertWorkorderHasStatus(workorder)
 
   expect(workorder).to.have.property('activities')
   expect(workorder.activities).to.be.an('array')
@@ -719,6 +722,55 @@ Then(
     }
 
     assertActivitiesHaveOperationalDetails(res.data.data)
+  }
+)
+
+Then(
+  'the workorders API should return status field for all returned workorders',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertWorkorderHasStatus(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders API should return status field for all returned activities',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+    }
+
+    assertActivitiesHaveStatus(res.data.data)
   }
 )
 

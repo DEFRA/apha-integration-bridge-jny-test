@@ -8,11 +8,16 @@ function expectStringOrNull(object, key) {
   }
 }
 
+export function assertWorkorderHasStatus(workorder) {
+  expectStringOrNull(workorder, 'status')
+}
+
 export function assertWorkorderActivityShape(activity) {
   expect(activity).to.have.property('type', 'activities')
   expect(activity).to.have.property('id')
   expect(activity.id).to.be.a('string')
   expectStringOrNull(activity, 'activityName')
+  expectStringOrNull(activity, 'status')
 
   if (activity.default !== undefined) {
     expect(activity.default).to.be.a('boolean')
@@ -51,6 +56,25 @@ export function assertActivitiesHaveOperationalDetails(workorders) {
   expect(
     validatedActivities,
     'Expected at least one activity so performActivity and workbasket can be verified'
+  ).to.be.greaterThan(0)
+}
+
+export function assertActivitiesHaveStatus(workorders) {
+  let validatedActivities = 0
+
+  for (const workorder of workorders) {
+    expect(workorder).to.have.property('activities')
+    expect(workorder.activities).to.be.an('array')
+
+    for (const activity of workorder.activities) {
+      expectStringOrNull(activity, 'status')
+      validatedActivities += 1
+    }
+  }
+
+  expect(
+    validatedActivities,
+    'Expected at least one activity so status can be verified'
   ).to.be.greaterThan(0)
 }
 
