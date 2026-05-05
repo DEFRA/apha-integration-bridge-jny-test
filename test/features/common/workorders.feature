@@ -112,12 +112,22 @@ Feature: Workorders endpoint tests
     When the request is processed by the system
     Then the workorders API should return activities ordered by ascending sequence number for all returned workorders
 
-  Scenario: 18 Verify successful response returns workorders array when pageSize is the maximum allowed value
+  Scenario: 18 Verify successful response includes status field for workorders
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return status field for all returned workorders
+
+  Scenario: 19 Verify successful response includes status field for activities
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return status field for all returned activities
+
+  Scenario: 20 Verify successful response returns workorders array when pageSize is the maximum allowed value
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.maxPageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return results for page "{{workorders.page}}" pageSize "{{workorders.maxPageSize}}"
 
-  Scenario: 19 Verify that bad request response (400) is returned when pageSize is greater than the maximum allowed value
+  Scenario: 21 Verify that bad request response (400) is returned when pageSize is greater than the maximum allowed value
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.invalidPageSize.tooLarge}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return a validation error response
