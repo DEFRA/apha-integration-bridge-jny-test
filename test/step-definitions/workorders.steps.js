@@ -97,6 +97,24 @@ function assertIsoDateWithinRange(dateValue, startDate, endDate) {
   expect(timestamp).to.be.below(endTimestamp)
 }
 
+function assertIsoFieldWithinRange(workorder, fieldName, startDate, endDate) {
+  expect(workorder).to.have.property(fieldName)
+  expect(
+    workorder[fieldName],
+    `${fieldName} must be present for workorder ${workorder.id}`
+  ).to.be.a('string')
+
+  const timestamp = parseIsoTimestamp(
+    workorder[fieldName],
+    `${fieldName} for workorder ${workorder.id}`
+  )
+  const startTimestamp = parseIsoTimestamp(startDate, `start ${fieldName}`)
+  const endTimestamp = parseIsoTimestamp(endDate, `end ${fieldName}`)
+
+  expect(timestamp).to.be.at.least(startTimestamp)
+  expect(timestamp).to.be.below(endTimestamp)
+}
+
 function assertAscendingActivationDates(workorders) {
   let previousTimestamp = null
 
@@ -142,6 +160,21 @@ function assertTargetDateField(workorder) {
     parseIsoTimestamp(
       workorder.targetDate,
       `targetDate for workorder ${workorder.id}`
+    )
+  }
+}
+
+function assertUpdatedDateField(workorder) {
+  expect(workorder).to.have.property('updatedDate')
+  if (workorder.updatedDate !== null) {
+    expect(
+      workorder.updatedDate,
+      `Expected workorder ${workorder.id} to include updatedDate as a string or null`
+    ).to.be.a('string')
+    expect(workorder.updatedDate.trim().length).to.be.greaterThan(0)
+    parseIsoTimestamp(
+      workorder.updatedDate,
+      `updatedDate for workorder ${workorder.id}`
     )
   }
 }
@@ -196,6 +229,8 @@ async function sendWorkordersGetRequest({
   pageSize,
   startDate,
   endDate,
+  startUpdatedDate,
+  endUpdatedDate,
   country,
   tokenMode = 'valid'
 }) {
@@ -215,9 +250,20 @@ async function sendWorkordersGetRequest({
   const uri = makeUri(baseUrl, endpoint, '')
   query = {
     page: resolveArg(page),
-    pageSize: resolveArg(pageSize),
-    startActivationDate: resolveArg(startDate),
-    endActivationDate: resolveArg(endDate)
+    pageSize: resolveArg(pageSize)
+  }
+
+  if (startDate !== undefined) {
+    query.startActivationDate = resolveArg(startDate)
+  }
+  if (endDate !== undefined) {
+    query.endActivationDate = resolveArg(endDate)
+  }
+  if (startUpdatedDate !== undefined) {
+    query.startUpdatedDate = resolveArg(startUpdatedDate)
+  }
+  if (endUpdatedDate !== undefined) {
+    query.endUpdatedDate = resolveArg(endUpdatedDate)
   }
 
   if (country !== undefined) {
@@ -295,6 +341,7 @@ function assertWorkorderShape(workorder) {
   expect(workorder.id).to.be.a('string')
 
   expectStringOrNull(workorder, 'activationDate')
+  expectStringOrNull(workorder, 'updatedDate')
   expectStringOrNull(workorder, 'businessArea')
   expectStringOrNull(workorder, 'workArea')
   expectStringOrNull(workorder, 'country')
@@ -416,6 +463,49 @@ Given(
   }
 )
 
+Given(
+  'the user submits {string} workorders GET request with params page {string} pageSize {string} startUpdatedDate {string} endUpdatedDate {string}',
+  async function (endpt, page, pageSize, startUpdatedDate, endUpdatedDate) {
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startUpdatedDate,
+      endUpdatedDate
+    })
+  }
+)
+
+Given(
+  'the user submits {string} workorders GET request with mixed date filters page {string} pageSize {string} startActivationDate {string} endActivationDate {string} startUpdatedDate {string} endUpdatedDate {string}',
+  async function (
+    endpt,
+    page,
+    pageSize,
+    startDate,
+    endDate,
+    startUpdatedDate,
+    endUpdatedDate
+  ) {
+    const optionalDateFilter = (value) => {
+      const resolved = resolveArg(value)
+      return resolved.trim() === '' ? undefined : resolved
+    }
+
+    await sendWorkordersGetRequest({
+      world: this,
+      endpt,
+      page,
+      pageSize,
+      startDate: optionalDateFilter(startDate),
+      endDate: optionalDateFilter(endDate),
+      startUpdatedDate: optionalDateFilter(startUpdatedDate),
+      endUpdatedDate: optionalDateFilter(endUpdatedDate)
+    })
+  }
+)
+
 Then(
   'the workorders API should return a validation error response',
   async function () {
@@ -494,6 +584,54 @@ Then(
     const qs = parseQueryString(res.data.links.self)
     expect(qs.get('page')).to.equal(expectedPage)
     expect(qs.get('pageSize')).to.equal(expectedPageSize)
+  }
+)
+
+Then(
+  'the workorders API should return results filtered by updated date for page {string} pageSize {string}',
+  async function (page, pageSize) {
+    const expectedPage = resolveArg(page)
+    const expectedPageSize = resolveArg(pageSize)
+    const res = this.response || response
+    const expected = this.query || query
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+    expect(res.data.data.length).to.be.at.most(Number(expectedPageSize))
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertIsoFieldWithinRange(
+        workorder,
+        'updatedDate',
+        expected.startUpdatedDate,
+        expected.endUpdatedDate
+      )
+    }
+
+    expect(res.data).to.have.property('links')
+    expect(res.data.links).to.have.property('self')
+    expect(res.data.links).to.have.property('next')
+    expect(res.data.links).to.have.property('prev')
+
+    const qs = parseQueryString(res.data.links.self)
+    expect(qs.get('page')).to.equal(expectedPage)
+    expect(qs.get('pageSize')).to.equal(expectedPageSize)
+    expect(qs.get('startUpdatedDate')).to.equal(
+      String(expected.startUpdatedDate)
+    )
+    expect(qs.get('endUpdatedDate')).to.equal(String(expected.endUpdatedDate))
+    expect(qs.get('startActivationDate')).to.equal(null)
+    expect(qs.get('endActivationDate')).to.equal(null)
   }
 )
 
@@ -672,6 +810,30 @@ Then(
     for (const workorder of res.data.data) {
       assertWorkorderShape(workorder)
       assertTargetDateField(workorder)
+    }
+  }
+)
+
+Then(
+  'the workorders API should return updated date field for all returned workorders',
+  async function () {
+    const res = this.response || response
+
+    if (res.status === 0) {
+      throw new Error(
+        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+      )
+    }
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.be.an('object')
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const workorder of res.data.data) {
+      assertWorkorderShape(workorder)
+      assertUpdatedDateField(workorder)
     }
   }
 )
