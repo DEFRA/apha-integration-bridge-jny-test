@@ -87,47 +87,68 @@ Feature: Workorders endpoint tests
     And the request is processed by the system
     Then the workorders API should return results filtered by the captured timestamp probe window
 
-  Scenario: 13 Verify successful response includes earliest activity start date field
+  Scenario: 13 Verify successful response returns workorders filtered by updated date
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startUpdatedDate "{{workorders.startUpdatedDate}}" endUpdatedDate "{{workorders.endUpdatedDate}}"
+    When the request is processed by the system
+    Then the workorders API should return results filtered by updated date for page "{{workorders.page}}" pageSize "{{workorders.pageSize}}"
+
+  Scenario Outline: 14 Verify that bad request response (400) is returned when activation and updated date filters are mixed
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with mixed date filters page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "<startActivationDate>" endActivationDate "<endActivationDate>" startUpdatedDate "<startUpdatedDate>" endUpdatedDate "<endUpdatedDate>"
+    When the request is processed by the system
+    Then the workorders API should return a validation error response
+
+    Examples:
+      | startActivationDate      | endActivationDate      | startUpdatedDate                | endUpdatedDate                |
+      | {{workorders.startDate}} |                        | {{workorders.startUpdatedDate}} |                               |
+      |                          | {{workorders.endDate}} |                                 | {{workorders.endUpdatedDate}} |
+      | {{workorders.startDate}} | {{workorders.endDate}} | {{workorders.startUpdatedDate}} | {{workorders.endUpdatedDate}} |
+
+  Scenario: 15 Verify successful response includes updated date field
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return updated date field for all returned workorders
+
+  Scenario: 16 Verify successful response includes earliest activity start date field
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return earliest activity start date field for all returned workorders
 
-  Scenario: 14 Verify successful response includes populated work area and species values
+  Scenario: 17 Verify successful response includes populated work area and species values
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return populated work area and species values for all returned workorders
 
-  Scenario: 15 Verify successful response includes target date field
+  Scenario: 18 Verify successful response includes target date field
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return target date field for all returned workorders
 
-  Scenario: 16 Verify successful response includes perform activity and workbasket fields for activities
+  Scenario: 19 Verify successful response includes perform activity and workbasket fields for activities
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return perform activity and workbasket fields for all returned activities
 
-  Scenario: 17 Verify successful response orders activities by ascending sequence number
+  Scenario: 20 Verify successful response orders activities by ascending sequence number
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return activities ordered by ascending sequence number for all returned workorders
 
-  Scenario: 18 Verify successful response includes status field for workorders
+  Scenario: 21 Verify successful response includes status field for workorders
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return status field for all returned workorders
 
-  Scenario: 19 Verify successful response includes status field for activities
+  Scenario: 22 Verify successful response includes status field for activities
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return status field for all returned activities
 
-  Scenario: 20 Verify successful response returns workorders array when pageSize is the maximum allowed value
+  Scenario: 23 Verify successful response returns workorders array when pageSize is the maximum allowed value
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.maxPageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return results for page "{{workorders.page}}" pageSize "{{workorders.maxPageSize}}"
 
-  Scenario: 21 Verify that bad request response (400) is returned when pageSize is greater than the maximum allowed value
+  Scenario: 24 Verify that bad request response (400) is returned when pageSize is greater than the maximum allowed value
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.invalidPageSize.tooLarge}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return a validation error response

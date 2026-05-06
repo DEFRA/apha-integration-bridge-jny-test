@@ -10,6 +10,8 @@ export default {
   },
   startDate: '2022-02-18T09:54:09.778Z',
   endDate: '2026-02-18T09:54:09.778Z',
+  startUpdatedDate: '2022-02-18T09:54:09.778Z',
+  endUpdatedDate: '2028-02-18T09:54:09.778Z',
   countries: {
     scotland: 'SCOTLAND',
     wales: 'WALES',

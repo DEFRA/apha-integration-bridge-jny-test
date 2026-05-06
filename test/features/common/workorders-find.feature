@@ -45,22 +45,27 @@ Feature: Workorders endpoint tests - find workorders in batch
     When the request is processed by the system
     Then the workorders find API should return target date field for all returned workorders
 
-  Scenario: 08 Verify successful response includes perform activity and workbasket fields for activities
+  Scenario: 08 Verify successful response includes updated date field
+    Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
+    When the request is processed by the system
+    Then the workorders find API should return updated date field for all returned workorders
+
+  Scenario: 09 Verify successful response includes perform activity and workbasket fields for activities
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return perform activity and workbasket fields for all returned activities
 
-  Scenario: 09 Verify successful response orders activities by ascending sequence number
+  Scenario: 10 Verify successful response orders activities by ascending sequence number
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return activities ordered by ascending sequence number for all returned workorders
 
-  Scenario: 10 Verify successful response includes status field for workorders
+  Scenario: 11 Verify successful response includes status field for workorders
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return status field for all returned workorders
 
-  Scenario: 11 Verify successful response includes status field for activities
+  Scenario: 12 Verify successful response includes status field for activities
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return status field for all returned activities
