@@ -440,7 +440,7 @@ Then(
 )
 
 Then(
-  'the workorders find API should return perform activity and workbasket fields for all returned activities',
+  'the workorders find API should return perform activity, workbasket and assigned to fields for all returned activities',
   async function () {
     const res = this.response
 
