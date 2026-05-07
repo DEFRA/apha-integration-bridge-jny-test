@@ -38,6 +38,8 @@ export function assertWorkorderActivityShape(activity) {
     0,
     `Expected activity ${activity.id} to include a non-empty workbasket`
   )
+
+  expectStringOrNull(activity, 'assignedTo')
 }
 
 export function assertActivitiesHaveOperationalDetails(workorders) {
@@ -55,7 +57,7 @@ export function assertActivitiesHaveOperationalDetails(workorders) {
 
   expect(
     validatedActivities,
-    'Expected at least one activity so performActivity and workbasket can be verified'
+    'Expected at least one activity so performActivity, workbasket and assignedTo can be verified'
   ).to.be.greaterThan(0)
 }
 
