@@ -3,8 +3,12 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
+import {
+  assertBadRequestResponse,
+  assertOkResponseWithDataArray
+} from '../utils/response-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -119,20 +123,9 @@ Then(
   'the API should return user details for email {string}',
   async function (_email) {
     const res = this.response || response
+    const users = assertOkResponseWithDataArray(res)
 
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    const first = res.data.data[0]
+    const first = users[0]
     expect(first).to.have.property('type')
     expect(first.type).to.equal('case-management-user')
 
@@ -150,18 +143,11 @@ Then(
 
 Then('the API should return no matching users', async function () {
   const res = this.response || response
+  const users = assertOkResponseWithDataArray(res, {
+    requireNonEmpty: false
+  })
 
-  if (res.status === 0) {
-    throw new Error(
-      `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-    )
-  }
-
-  expect(res.status).to.equal(responseCodes.ok)
-
-  expect(res.data).to.have.property('data')
-  expect(res.data.data).to.be.an('array')
-  expect(res.data.data.length).to.equal(0)
+  expect(users.length).to.equal(0)
 
   expect(res.data).to.have.property('links')
   expect(res.data.links).to.have.property('self')
@@ -175,31 +161,13 @@ Then(
   async function (expectedMessage) {
     const res = this.response || response
 
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-
-    const body = res.data
-
-    expect(body).to.have.property('message')
-    expect(body).to.have.property('code')
-    expect(body.message).to.equal('Your request could not be processed')
-    expect(body.code).to.equal('BAD_REQUEST')
-
-    expect(body).to.have.property('errors')
-    expect(body.errors).to.be.an('array')
-    expect(body.errors.length).to.equal(1)
-
-    const err = body.errors[0]
-    expect(err).to.have.property('code')
-    expect(err).to.have.property('message')
-    expect(err.code).to.equal('VALIDATION_ERROR')
-
     const cleaned = resolveArg(expectedMessage).replace(/^"|"$/g, '')
-    expect(err.message).to.equal(cleaned)
+    assertBadRequestResponse(res, {
+      expectedMessage: 'Your request could not be processed',
+      expectedCode: 'BAD_REQUEST',
+      expectedErrorCount: 1,
+      expectedFirstErrorCode: 'VALIDATION_ERROR',
+      expectedFirstErrorMessage: cleaned
+    })
   }
 )

@@ -4,12 +4,12 @@ import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
+import { assertBadRequestResponse } from '../utils/response-assertions.js'
 
 import {
   token,
   strProcessor,
   holdingsendpointKeys,
-  responseCodes,
   methodNames,
   locationsKeys
 } from '../utils/token.js'
@@ -238,35 +238,19 @@ Then(
     const res = this.response || response
     const ep = this.endpoint || endpoint
     const theId = this.id || id
-
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    const actualResponse = res.data
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-
-    expect(actualResponse).to.have.property(holdingsendpointKeys.MSG)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.CODE)
-    expect(actualResponse).to.have.property(holdingsendpointKeys.ERRORS)
-
-    expect(actualResponse.message).to.equal(
-      holdingsendpointKeys.INVALID_PARAMETERS
-    )
-    expect(holdingsendpointKeys.BAD_REQUEST).to.equal(
-      holdingsendpointKeys.BAD_REQUEST
-    )
-
-    const errorMeesage = actualResponse.errors[0]
     const resolvedExpectedMessage = resolveArg(expectedMessage)
     const cleanedMessage =
       resolvedExpectedMessage.startsWith('"') &&
       resolvedExpectedMessage.endsWith('"')
         ? resolvedExpectedMessage.slice(1, -1)
         : resolvedExpectedMessage
+    const { errors, firstError: errorMeesage } = assertBadRequestResponse(res, {
+      expectedMessage: holdingsendpointKeys.INVALID_PARAMETERS,
+      expectedCode: holdingsendpointKeys.BAD_REQUEST,
+      expectedErrorCount: 1,
+      expectedFirstErrorCode: 'VALIDATION_ERROR',
+      expectedFirstErrorMessage: cleanedMessage
+    })
 
     expect(errorMeesage).to.have.property(holdingsendpointKeys.CODE)
     expect(errorMeesage).to.have.property(holdingsendpointKeys.MSG)
@@ -289,7 +273,7 @@ Then(
     }
 
     expect(errorMeesage.message).to.equal(cleanedMessage)
-    expect(actualResponse.errors.length).to.equal(1)
+    expect(errors.length).to.equal(1)
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
   }
 )

@@ -3,11 +3,15 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
+import {
+  assertBadRequestResponse,
+  assertOkResponseWithDataArray
+} from '../utils/response-assertions.js'
 import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
@@ -170,20 +174,12 @@ function assertFindLinks(links, expectedPath) {
 }
 
 function assertSuccessResponseBasics(res) {
-  if (!res) throw new Error('No response captured at all (unexpected).')
-
-  if (res.status === 0) {
-    throw new Error(
-      `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-    )
-  }
-
-  expect(res.status).to.equal(responseCodes.ok)
-  expect(res.data).to.be.an('object')
-  expect(res.data).to.have.property('data')
-  expect(res.data.data).to.be.an('array')
+  const locations = assertOkResponseWithDataArray(res, {
+    requireNonEmpty: false
+  })
   expect(res.data).to.have.property('links')
   assertFindLinks(res.data.links, 'locations/find')
+  return locations
 }
 
 async function sendLocationsFindRequest({
@@ -336,32 +332,7 @@ Then(
   async function () {
     const res = this.response
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('message')
-    expect(res.data.message).to.be.a('string')
-    expect(res.data.message.trim().length).to.be.greaterThan(0)
-    expect(res.data).to.have.property('errors')
-    expect(res.data.errors).to.be.an('array')
-    expect(res.data.errors.length).to.be.greaterThan(0)
-
-    const firstError = res.data.errors[0]
-    expect(firstError).to.have.property('message')
-    expect(firstError.message).to.be.a('string')
-
-    if (res.data.code !== undefined) {
-      expect(res.data.code).to.be.a('string')
-    }
-    if (firstError.code !== undefined) {
-      expect(firstError.code).to.be.a('string')
-    }
+    assertBadRequestResponse(res, { validateOptionalCodes: true })
   }
 )
 
@@ -369,7 +340,7 @@ Then(
   'the locations find API should apply default pagination values',
   async function () {
     const res = this.response
-    assertSuccessResponseBasics(res)
+    const locations = assertSuccessResponseBasics(res)
 
     const selfQuery = parseQueryString(res.data.links.self)
     const selfPage = selfQuery.get('page')
@@ -383,9 +354,9 @@ Then(
     }
 
     expect(res.data.links.prev).to.equal(null)
-    expect(res.data.data.length).to.be.at.most(50)
+    expect(locations.length).to.be.at.most(50)
 
-    for (const location of res.data.data) {
+    for (const location of locations) {
       assertLocationShape(location)
     }
   }
@@ -397,10 +368,10 @@ Then(
     const submittedIds = resolveValueArg(ids)
     const res = this.response
 
-    assertSuccessResponseBasics(res)
-    expect(res.data.data.length).to.be.greaterThan(0)
+    const locations = assertSuccessResponseBasics(res)
+    expect(locations.length).to.be.greaterThan(0)
 
-    const returnedIds = res.data.data.map((location) => location.id)
+    const returnedIds = locations.map((location) => location.id)
     const uniqueReturnedIds = new Set(returnedIds)
 
     expect(uniqueReturnedIds.size).to.equal(
@@ -408,7 +379,7 @@ Then(
       'returned location ids must be unique'
     )
 
-    for (const location of res.data.data) {
+    for (const location of locations) {
       expect(
         submittedIds,
         `Expected returned location id "${location.id}" to be in submitted ids`
@@ -425,12 +396,12 @@ Then(
     const expectedMissingId = resolveStringArg(missingId)
     const res = this.response
 
-    assertSuccessResponseBasics(res)
+    const locations = assertSuccessResponseBasics(res)
 
-    const returnedIds = res.data.data.map((location) => location.id)
+    const returnedIds = locations.map((location) => location.id)
     expect(returnedIds).to.not.include(expectedMissingId)
 
-    for (const location of res.data.data) {
+    for (const location of locations) {
       expect(
         submittedIds,
         `Expected returned location id "${location.id}" to be in submitted ids`
@@ -448,12 +419,12 @@ Then(
     const expectedPageSize = Number(resolveStringArg(pageSize))
     const res = this.response
 
-    assertSuccessResponseBasics(res)
+    const locations = assertSuccessResponseBasics(res)
 
     const selfQuery = parseQueryString(res.data.links.self)
     expect(selfQuery.get('page')).to.equal(String(expectedPage))
     expect(selfQuery.get('pageSize')).to.equal(String(expectedPageSize))
-    expect(res.data.data.length).to.be.at.most(expectedPageSize)
+    expect(locations.length).to.be.at.most(expectedPageSize)
 
     const startIndex = (expectedPage - 1) * expectedPageSize
     const expectedSubset = submittedIds.slice(
@@ -462,11 +433,11 @@ Then(
     )
 
     if (expectedSubset.length === 0) {
-      expect(res.data.data.length).to.equal(0)
+      expect(locations.length).to.equal(0)
       return
     }
 
-    for (const location of res.data.data) {
+    for (const location of locations) {
       expect(
         expectedSubset,
         `Expected returned location id "${location.id}" to be in page subset`
@@ -485,7 +456,7 @@ Then(
     const expectedPageSize = Number(resolveStringArg(pageSize))
     const res = this.response
 
-    assertSuccessResponseBasics(res)
+    const locations = assertSuccessResponseBasics(res)
 
     const selfQuery = parseQueryString(res.data.links.self)
     expect(selfQuery.get('page')).to.equal(String(expectedPage))
@@ -504,11 +475,11 @@ Then(
     }
 
     const expectedReturnedIds = expectedReturnedIdsByPage[expectedPage] || []
-    const returnedIds = res.data.data.map((location) => location.id)
+    const returnedIds = locations.map((location) => location.id)
 
     expect(returnedIds).to.deep.equal(expectedReturnedIds)
 
-    for (const location of res.data.data) {
+    for (const location of locations) {
       expect(location.id).to.not.equal(resolvedMissingId)
       assertLocationShape(location)
     }
