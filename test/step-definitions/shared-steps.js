@@ -244,7 +244,7 @@ Then(
       resolvedExpectedMessage.endsWith('"')
         ? resolvedExpectedMessage.slice(1, -1)
         : resolvedExpectedMessage
-    const { errors, firstError: errorMeesage } = assertBadRequestResponse(res, {
+    const { firstError: errorMeesage } = assertBadRequestResponse(res, {
       expectedMessage: holdingsendpointKeys.INVALID_PARAMETERS,
       expectedCode: holdingsendpointKeys.BAD_REQUEST,
       expectedErrorCount: 1,
@@ -273,7 +273,6 @@ Then(
     }
 
     expect(errorMeesage.message).to.equal(cleanedMessage)
-    expect(errors.length).to.equal(1)
     expect(errorMeesage.code).to.equal('VALIDATION_ERROR')
   }
 )
