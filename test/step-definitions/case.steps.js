@@ -8,6 +8,7 @@ import {
   getScenarioValue,
   resolveScenarioString
 } from '../utils/scenario-data.js'
+import { assertBadRequestResponse } from '../utils/response-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -131,30 +132,16 @@ Then(
   'the case API should return bad request with message {string}',
   async function (expectedMessage) {
     const res = this.response
-
-    if (!res) throw new Error('No response captured at all (unexpected).')
-
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-
-    const body = res.data
-    expect(body).to.have.property('message', 'Invalid request parameters')
-    expect(body).to.have.property('code', 'BAD_REQUEST')
-    expect(body).to.have.property('errors')
-    expect(body.errors).to.be.an('array')
-    expect(body.errors.length).to.equal(1)
-
-    const err = body.errors[0]
-    expect(err).to.have.property('code', 'VALIDATION_ERROR')
+    const { firstError } = assertBadRequestResponse(res, {
+      expectedMessage: 'Invalid request parameters',
+      expectedCode: 'BAD_REQUEST',
+      expectedErrorCount: 1,
+      expectedFirstErrorCode: 'VALIDATION_ERROR'
+    })
 
     const cleaned = expectedMessage.replace(/^"|"$/g, '')
     const resolvedMessage = resolveArg(cleaned)
-    const actualMsg = String(err.message)
+    const actualMsg = String(firstError.message)
     const expected = String(resolvedMessage)
 
     const normalisedActual = actualMsg.replace(/^"/, '')

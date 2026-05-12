@@ -67,10 +67,10 @@ Feature: Workorders endpoint tests
       | {{workorders.countries.wales}}    |
       | {{workorders.countries.england}}  |
 
-  Scenario: 10 Verify successful response defaults country to Scotland when country is omitted
+  Scenario: 10 Verify successful response does not default country to Scotland when country is omitted
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
-    Then the workorders API should return default country results for country "{{workorders.countries.scotland}}" page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
+    Then the workorders API should return all country results for page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     And the workorders API should return a self link containing the same query params
 
   Scenario: 11 Verify that bad request response (400) is returned for invalid country parameter

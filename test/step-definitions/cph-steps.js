@@ -2,12 +2,9 @@ import { Then } from '@cucumber/cucumber'
 import { expect } from 'chai'
 
 import { Cph } from '../responseprocessor/cph.js'
-import {
-  strProcessor,
-  holdingsendpointKeys,
-  responseCodes
-} from '../utils/token.js'
+import { strProcessor, holdingsendpointKeys } from '../utils/token.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
+import { assertOkResponse } from '../utils/response-assertions.js'
 
 const expectedCphTypes = ['permanent', 'temporary', 'emergency']
 const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
@@ -17,19 +14,13 @@ Then(
   async function (expectedCpStatus, expectedLocationID) {
     const res = this.response
 
-    if (res?.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
+    assertOkResponse(res)
 
     const endpoint = this.endpoint
     const id = this.id
 
     const status = resolveArg(expectedCpStatus)
     const expectedLocation = resolveArg(expectedLocationID)
-
-    expect(res.status).to.equal(responseCodes.ok)
 
     const resData = res.data.data
     expect(resData).to.have.property(holdingsendpointKeys.TYPE)

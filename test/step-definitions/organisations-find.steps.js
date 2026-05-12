@@ -3,11 +3,15 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
+import {
+  assertBadRequestResponse,
+  assertOkResponseWithDataArray
+} from '../utils/response-assertions.js'
 import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
@@ -135,34 +139,7 @@ Then(
   async function () {
     const res = this.response
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('message')
-    expect(res.data.message).to.be.a('string')
-    expect(res.data.message.trim().length).to.be.greaterThan(0)
-
-    expect(res.data).to.have.property('errors')
-    expect(res.data.errors).to.be.an('array')
-    expect(res.data.errors.length).to.be.greaterThan(0)
-
-    const firstError = res.data.errors[0]
-    expect(firstError).to.have.property('message')
-    expect(firstError.message).to.be.a('string')
-
-    // Contract-level check only: if code fields exist, they should be strings.
-    if (res.data.code !== undefined) {
-      expect(res.data.code).to.be.a('string')
-    }
-    if (firstError.code !== undefined) {
-      expect(firstError.code).to.be.a('string')
-    }
+    assertBadRequestResponse(res, { validateOptionalCodes: true })
   }
 )
 
@@ -171,18 +148,8 @@ Then(
   async function (ids) {
     const submittedIds = resolveValueArg(ids)
     const res = this.response
+    const organisations = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
     expect(res.data).to.have.property('links')
     expect(res.data.links).to.be.an('object')
     expect(res.data.links).to.have.property('self')
@@ -210,15 +177,13 @@ Then(
     assertLinkPath(res.data.links.prev, 'prev', false)
     assertLinkPath(res.data.links.next, 'next', false)
 
-    const returnedIds = res.data.data.map((organisation) => organisation.id)
+    const returnedIds = organisations.map((organisation) => organisation.id)
     const uniqueReturnedIds = new Set(returnedIds)
 
     expect(uniqueReturnedIds.size).to.equal(
       returnedIds.length,
       'returned organisation ids must be unique'
     )
-    expect(res.data.data.length).to.be.greaterThan(0)
-
     for (const submittedId of submittedIds) {
       expect(
         returnedIds,
@@ -226,7 +191,7 @@ Then(
       ).to.include(submittedId)
     }
 
-    for (const organisation of res.data.data) {
+    for (const organisation of organisations) {
       expect(organisation).to.have.property('type', 'organisations')
       expect(organisation).to.have.property('id')
       expect(organisation.id).to.be.a('string')

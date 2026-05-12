@@ -3,11 +3,15 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
+import {
+  assertBadRequestResponse,
+  assertOkResponseWithDataArray
+} from '../utils/response-assertions.js'
 import {
   assertActivitiesOrderedBySequenceNumber,
   assertActivitiesHaveOperationalDetails,
@@ -293,33 +297,7 @@ Then(
   async function () {
     const res = this.response
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('message')
-    expect(res.data.message).to.be.a('string')
-    expect(res.data.message.trim().length).to.be.greaterThan(0)
-
-    expect(res.data).to.have.property('errors')
-    expect(res.data.errors).to.be.an('array')
-    expect(res.data.errors.length).to.be.greaterThan(0)
-
-    const firstError = res.data.errors[0]
-    expect(firstError).to.have.property('message')
-    expect(firstError.message).to.be.a('string')
-
-    if (res.data.code !== undefined) {
-      expect(res.data.code).to.be.a('string')
-    }
-    if (firstError.code !== undefined) {
-      expect(firstError.code).to.be.a('string')
-    }
+    assertBadRequestResponse(res, { validateOptionalCodes: true })
   }
 )
 
@@ -328,23 +306,12 @@ Then(
   async function (ids) {
     const submittedIds = resolveValueArg(ids)
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
     expect(res.data).to.have.property('links')
     assertFindLinks(res.data.links, 'workorders/find')
 
-    const returnedIds = res.data.data.map((workorder) => workorder.id)
+    const returnedIds = workorders.map((workorder) => workorder.id)
     const uniqueReturnedIds = new Set(returnedIds)
     expect(uniqueReturnedIds.size).to.equal(
       returnedIds.length,
@@ -358,7 +325,7 @@ Then(
       ).to.include(submittedId)
     }
 
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
     }
   }
@@ -368,21 +335,9 @@ Then(
   'the workorders find API should return earliest activity start date field for all returned workorders',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
       assertEarliestActivityStartDateField(workorder)
     }
@@ -393,21 +348,9 @@ Then(
   'the workorders find API should return target date field for all returned workorders',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
       assertTargetDateField(workorder)
     }
@@ -418,21 +361,9 @@ Then(
   'the workorders find API should return updated date field for all returned workorders',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
       assertUpdatedDateField(workorder)
     }
@@ -443,25 +374,13 @@ Then(
   'the workorders find API should return perform activity, workbasket and assigned to fields for all returned activities',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
     }
 
-    assertActivitiesHaveOperationalDetails(res.data.data)
+    assertActivitiesHaveOperationalDetails(workorders)
   }
 )
 
@@ -469,21 +388,9 @@ Then(
   'the workorders find API should return status field for all returned workorders',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
       assertWorkorderHasStatus(workorder)
     }
@@ -494,25 +401,13 @@ Then(
   'the workorders find API should return status field for all returned activities',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
     }
 
-    assertActivitiesHaveStatus(res.data.data)
+    assertActivitiesHaveStatus(workorders)
   }
 )
 
@@ -520,24 +415,12 @@ Then(
   'the workorders find API should return activities ordered by ascending sequence number for all returned workorders',
   async function () {
     const res = this.response
+    const workorders = assertOkResponseWithDataArray(res)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const workorder of res.data.data) {
+    for (const workorder of workorders) {
       assertWorkorderShape(workorder)
     }
 
-    assertActivitiesOrderedBySequenceNumber(res.data.data)
+    assertActivitiesOrderedBySequenceNumber(workorders)
   }
 )

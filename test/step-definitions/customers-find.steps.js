@@ -3,11 +3,15 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
+import {
+  assertBadRequestResponse,
+  assertOkResponseWithDataArray
+} from '../utils/response-assertions.js'
 import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
@@ -191,28 +195,10 @@ Then(
   async function () {
     const res = this.response || response
 
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 400 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.badRequest)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('message')
-    expect(res.data.message).to.be.a('string')
-    expect(res.data.message.trim().length).to.be.greaterThan(0)
-    expect(res.data).to.have.property('code')
-    expect(res.data.code).to.equal('BAD_REQUEST')
-    expect(res.data).to.have.property('errors')
-    expect(res.data.errors).to.be.an('array')
-    expect(res.data.errors.length).to.be.greaterThan(0)
-
-    const firstError = res.data.errors[0]
-    expect(firstError).to.have.property('code')
-    expect(firstError.code).to.equal('VALIDATION_ERROR')
-    expect(firstError).to.have.property('message')
-    expect(firstError.message).to.be.a('string')
+    assertBadRequestResponse(res, {
+      expectedCode: 'BAD_REQUEST',
+      expectedFirstErrorCode: 'VALIDATION_ERROR'
+    })
   }
 )
 
@@ -221,18 +207,8 @@ Then(
   async function (ids) {
     const submittedIds = resolveValueArg(ids)
     const res = this.response || response
+    const customers = assertOkResponseWithDataArray(res)
 
-    if (res.status === 0) {
-      throw new Error(
-        `Expected 200 but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
-    }
-
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.be.an('object')
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
     expect(res.data).to.have.property('links')
     expect(res.data.links).to.have.property('self')
 
@@ -240,7 +216,7 @@ Then(
     const pathPart = normalisePath(selfLink.split('?')[0])
     expect(pathPart).to.equal('customers/find')
 
-    for (const customer of res.data.data) {
+    for (const customer of customers) {
       expect(customer).to.have.property('type')
       expect(customer.type).to.equal('customers')
       expect(customer).to.have.property('id')
