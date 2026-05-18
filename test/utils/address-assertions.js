@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 
 export const supportedInternalCountries = ['SCOTLAND', 'WALES', 'ENGLAND']
+const maskedValuePattern = /^[*#]+$/
 
 export function expectPopulatedStringProperty(object, key) {
   expect(object).to.have.property(key)
@@ -18,7 +19,11 @@ export function expectStringOrNullProperty(object, key) {
   expect(object[key]).to.be.a('string')
 }
 
-export function expectCountyDescriptiveNameOrNull(object, key = 'county') {
+export function expectCountyDescriptiveNameOrNull(
+  object,
+  key = 'county',
+  { allowMasked = false } = {}
+) {
   expect(object).to.have.property(key)
 
   if (object[key] === null) {
@@ -30,6 +35,11 @@ export function expectCountyDescriptiveNameOrNull(object, key = 'county') {
   const county = object[key].trim()
 
   expect(county, `${key} should be populated when provided`).to.not.equal('')
+
+  if (allowMasked && maskedValuePattern.test(county)) {
+    return
+  }
+
   expect(
     county,
     `${key} should be a descriptive name, not a numeric county code`

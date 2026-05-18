@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor } from '../utils/token.js'
+import { token, strProcessor, responseCodes } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -16,6 +16,11 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from '../utils/address-assertions.js'
+import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
+import {
+  assertStringFieldMasked,
+  assertStringFieldUnmasked
+} from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -117,7 +122,9 @@ function assertLocationShape(location) {
   expectStringOrNull(location.address, 'locality')
   expectStringOrNull(location.address, 'town')
   expectStringOrNull(location.address, 'postcode')
-  expectCountyDescriptiveNameOrNull(location.address)
+  expectCountyDescriptiveNameOrNull(location.address, 'county', {
+    allowMasked: true
+  })
   expectInternalCountryCode(location.address)
 
   expect(location).to.have.property('livestockUnits')
@@ -189,11 +196,13 @@ async function sendLocationsFindRequest({
   page,
   pageSize,
   includeBody = true,
+  usePiiAuthorisedClient = false,
   tokenMode = 'valid'
 }) {
   const endpoint = resolveStringArg(endpt)
-  const cachedToken =
-    world.tokenGen || (await token(tokenUrl, clientId, secretId))
+  const cachedToken = usePiiAuthorisedClient
+    ? await tokenForPiiAuthorisedClient(world)
+    : world.tokenGen || (await token(tokenUrl, clientId, secretId))
 
   let tokenGen = cachedToken
   if (tokenMode === 'invalid') {
@@ -327,6 +336,18 @@ Given(
   }
 )
 
+Given(
+  'the user submits {string} locations find POST request with ids {string} using PII-authorised client',
+  async function (endpt, ids) {
+    await sendLocationsFindRequest({
+      world: this,
+      endpt,
+      body: { ids: resolveValueArg(ids) },
+      usePiiAuthorisedClient: true
+    })
+  }
+)
+
 Then(
   'the locations find API should return a validation error response',
   async function () {
@@ -385,6 +406,54 @@ Then(
         `Expected returned location id "${location.id}" to be in submitted ids`
       ).to.include(location.id)
       assertLocationShape(location)
+    }
+  }
+)
+
+Then(
+  'the locations find API should return masked PII fields',
+  async function () {
+    const res = this.response
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const location of res.data.data) {
+      assertStringFieldMasked(location, 'name', `location ${location.id}`)
+
+      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
+        assertStringFieldMasked(
+          location.address,
+          key,
+          `location ${location.id} address`
+        )
+      }
+    }
+  }
+)
+
+Then(
+  'the locations find API should return unmasked PII fields',
+  async function () {
+    const res = this.response
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const location of res.data.data) {
+      assertStringFieldUnmasked(location, 'name', `location ${location.id}`)
+
+      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
+        assertStringFieldUnmasked(
+          location.address,
+          key,
+          `location ${location.id} address`
+        )
+      }
     }
   }
 )

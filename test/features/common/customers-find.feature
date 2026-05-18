@@ -71,3 +71,13 @@ Feature: Customers endpoint tests - find customers in batch
     Examples:
       | endpoint                        | ids                           |
       | {{customersFind.endpoint}}      | {{customersFind.validIds}}    |
+
+  Scenario: 08 Verify non-PII authorised client receives masked customer PII
+    Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}"
+    When the request is processed by the system
+    Then the customers find API should return masked PII fields
+
+  Scenario: 09 Verify PII-authorised client receives unmasked customer PII
+    Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}" using PII-authorised client
+    When the request is processed by the system
+    Then the customers find API should return unmasked PII fields

@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor } from '../utils/token.js'
+import { token, strProcessor, responseCodes } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -16,6 +16,11 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from '../utils/address-assertions.js'
+import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
+import {
+  assertStringFieldMasked,
+  assertStringFieldUnmasked
+} from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -47,11 +52,13 @@ async function sendCustomersFindRequest({
   body,
   page,
   pageSize,
+  usePiiAuthorisedClient = false,
   tokenMode = 'valid'
 }) {
   endpoint = resolveStringArg(endpt)
-  const cachedToken =
-    world.tokenGen || tokenGen || (await token(tokenUrl, clientId, secretId))
+  const cachedToken = usePiiAuthorisedClient
+    ? await tokenForPiiAuthorisedClient(world)
+    : world.tokenGen || tokenGen || (await token(tokenUrl, clientId, secretId))
 
   if (tokenMode === 'invalid') {
     tokenGen = 'sss'
@@ -190,6 +197,18 @@ Given(
   }
 )
 
+Given(
+  'the user submits {string} customers find POST request with ids {string} using PII-authorised client',
+  async function (endpt, ids) {
+    await sendCustomersFindRequest({
+      world: this,
+      endpt,
+      body: { ids: resolveValueArg(ids) },
+      usePiiAuthorisedClient: true
+    })
+  }
+)
+
 Then(
   'the customers find API should return a validation error response',
   async function () {
@@ -252,7 +271,9 @@ Then(
         expect(address).to.have.property('locality')
         expect(address).to.have.property('town')
         expect(address).to.have.property('postcode')
-        expectCountyDescriptiveNameOrNull(address)
+        expectCountyDescriptiveNameOrNull(address, 'county', {
+          allowMasked: true
+        })
         expectInternalCountryCode(address)
         expect(address).to.have.property('isPreferred')
         expect(address.isPreferred).to.be.a('boolean')
@@ -263,6 +284,106 @@ Then(
         expect(contactDetail.isPreferred).to.be.a('boolean')
         expect(contactDetail).to.have.property('type')
         expect(contactDetail.type).to.be.a('string')
+      }
+    }
+  }
+)
+
+Then(
+  'the customers find API should return masked PII fields',
+  async function () {
+    const res = this.response || response
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const customer of res.data.data) {
+      for (const key of ['title', 'firstName', 'middleName', 'lastName']) {
+        assertStringFieldMasked(customer, key, `customer ${customer.id}`)
+      }
+
+      for (let index = 0; index < customer.addresses.length; index++) {
+        const address = customer.addresses[index]
+
+        for (const key of [
+          'street',
+          'locality',
+          'town',
+          'county',
+          'postcode'
+        ]) {
+          assertStringFieldMasked(
+            address,
+            key,
+            `customer ${customer.id} address ${index}`
+          )
+        }
+      }
+
+      for (let index = 0; index < customer.contactDetails.length; index++) {
+        const contact = customer.contactDetails[index]
+
+        for (const key of ['emailAddress', 'phoneNumber'].filter((key) =>
+          Object.hasOwn(contact, key)
+        )) {
+          assertStringFieldMasked(
+            contact,
+            key,
+            `customer ${customer.id} contactDetail ${index}`
+          )
+        }
+      }
+    }
+  }
+)
+
+Then(
+  'the customers find API should return unmasked PII fields',
+  async function () {
+    const res = this.response || response
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const customer of res.data.data) {
+      for (const key of ['title', 'firstName', 'middleName', 'lastName']) {
+        assertStringFieldUnmasked(customer, key, `customer ${customer.id}`)
+      }
+
+      for (let index = 0; index < customer.addresses.length; index++) {
+        const address = customer.addresses[index]
+
+        for (const key of [
+          'street',
+          'locality',
+          'town',
+          'county',
+          'postcode'
+        ]) {
+          assertStringFieldUnmasked(
+            address,
+            key,
+            `customer ${customer.id} address ${index}`
+          )
+        }
+      }
+
+      for (let index = 0; index < customer.contactDetails.length; index++) {
+        const contact = customer.contactDetails[index]
+
+        for (const key of ['emailAddress', 'phoneNumber'].filter((key) =>
+          Object.hasOwn(contact, key)
+        )) {
+          assertStringFieldUnmasked(
+            contact,
+            key,
+            `customer ${customer.id} contactDetail ${index}`
+          )
+        }
       }
     }
   }

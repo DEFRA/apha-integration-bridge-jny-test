@@ -5,6 +5,7 @@ import { expect } from 'chai'
 import { cfg, makeUri } from '../../config/properties.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
 import { assertBadRequestResponse } from '../utils/response-assertions.js'
+import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 
 import {
   token,
@@ -124,6 +125,31 @@ Given(
     this.response = response
     this.endpoint = endpoint
     this.id = id
+  }
+)
+
+Given(
+  'the user submits {string} {string} request using PII-authorised client',
+  async function (endpt, actualid) {
+    endpoint = resolveArg(endpt)
+    id = resolveArg(actualid)
+
+    tokenGen = await tokenForPiiAuthorisedClient(this)
+
+    const uri = makeUri(baseUrl, endpoint, id)
+
+    try {
+      response = await axios.get(uri, {
+        headers: { Authorization: `Bearer ${tokenGen}` }
+      })
+    } catch (error) {
+      response = toResponseLike(error, uri)
+    }
+
+    this.response = response
+    this.endpoint = endpoint
+    this.id = id
+    this.tokenGen = tokenGen
   }
 )
 

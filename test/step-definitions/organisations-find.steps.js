@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor } from '../utils/token.js'
+import { token, strProcessor, responseCodes } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -16,6 +16,11 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from '../utils/address-assertions.js'
+import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
+import {
+  assertStringFieldMasked,
+  assertStringFieldUnmasked
+} from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -41,11 +46,13 @@ async function sendOrganisationsFindRequest({
   endpt,
   body,
   includeBody = true,
+  usePiiAuthorisedClient = false,
   tokenMode = 'valid'
 }) {
   const endpoint = resolveStringArg(endpt)
-  const cachedToken =
-    world.tokenGen || (await token(tokenUrl, clientId, secretId))
+  const cachedToken = usePiiAuthorisedClient
+    ? await tokenForPiiAuthorisedClient(world)
+    : world.tokenGen || (await token(tokenUrl, clientId, secretId))
 
   let tokenGen = cachedToken
 
@@ -134,6 +141,18 @@ Given(
   }
 )
 
+Given(
+  'the user submits {string} organisations find POST request with ids {string} using PII-authorised client',
+  async function (endpt, ids) {
+    await sendOrganisationsFindRequest({
+      world: this,
+      endpt,
+      body: { ids: resolveValueArg(ids) },
+      usePiiAuthorisedClient: true
+    })
+  }
+)
+
 Then(
   'the organisations find API should return a validation error response',
   async function () {
@@ -211,7 +230,9 @@ Then(
       expect(organisation.address).to.have.property('locality')
       expect(organisation.address).to.have.property('town')
       expect(organisation.address).to.have.property('postcode')
-      expectCountyDescriptiveNameOrNull(organisation.address)
+      expectCountyDescriptiveNameOrNull(organisation.address, 'county', {
+        allowMasked: true
+      })
       expectInternalCountryCode(organisation.address)
 
       expect(organisation).to.have.property('contactDetails')
@@ -244,6 +265,90 @@ Then(
         expect(relatedPlant).to.have.property('type', 'srabpi-plants')
         expect(relatedPlant).to.have.property('id')
         expect(relatedPlant.id).to.be.a('string')
+      }
+    }
+  }
+)
+
+Then(
+  'the organisations find API should return masked PII fields',
+  async function () {
+    const res = this.response
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const organisation of res.data.data) {
+      assertStringFieldMasked(
+        organisation,
+        'organisationName',
+        `organisation ${organisation.id}`
+      )
+
+      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
+        assertStringFieldMasked(
+          organisation.address,
+          key,
+          `organisation ${organisation.id} address`
+        )
+      }
+
+      for (const contactType of ['primaryContact', 'secondaryContact']) {
+        const contact = organisation.contactDetails?.[contactType] || null
+
+        if (!contact) continue
+
+        for (const key of ['fullName', 'emailAddress', 'phoneNumber']) {
+          assertStringFieldMasked(
+            contact,
+            key,
+            `organisation ${organisation.id} ${contactType}`
+          )
+        }
+      }
+    }
+  }
+)
+
+Then(
+  'the organisations find API should return unmasked PII fields',
+  async function () {
+    const res = this.response
+
+    expect(res.status).to.equal(responseCodes.ok)
+    expect(res.data).to.have.property('data')
+    expect(res.data.data).to.be.an('array')
+    expect(res.data.data.length).to.be.greaterThan(0)
+
+    for (const organisation of res.data.data) {
+      assertStringFieldUnmasked(
+        organisation,
+        'organisationName',
+        `organisation ${organisation.id}`
+      )
+
+      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
+        assertStringFieldUnmasked(
+          organisation.address,
+          key,
+          `organisation ${organisation.id} address`
+        )
+      }
+
+      for (const contactType of ['primaryContact', 'secondaryContact']) {
+        const contact = organisation.contactDetails?.[contactType] || null
+
+        if (!contact) continue
+
+        for (const key of ['fullName', 'emailAddress', 'phoneNumber']) {
+          assertStringFieldUnmasked(
+            contact,
+            key,
+            `organisation ${organisation.id} ${contactType}`
+          )
+        }
       }
     }
   }

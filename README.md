@@ -74,6 +74,7 @@ Optional variables:
 - `JOURNEY_BASE_URL` / `API_BASE_URL` / `TEST_BASE_URL` to override target API URL.
 - `BASE_URL` can be used as a legacy override only when `ALLOW_BASE_URL_OVERRIDE=true` (to avoid CDP platform env collisions).
 - `COGNITO_CLIENT_ID` / `COGNITO_CLIENT_SECRET` to override env file values.
+- `DEV_PII_AUTHORISED_CLIENT_ID` / `DEV_PII_AUTHORISED_CLIENT_SECRET` and `TEST_PII_AUTHORISED_CLIENT_ID` / `TEST_PII_AUTHORISED_CLIENT_SECRET` for the PII-authorised client used by unmasked PII journey tests.
 - `COGNITO_DOMAIN` to override Cognito token domain.
 - `HTTP_PROXY` to route outbound requests through a proxy (non-local mode).
 - `IS_LOCAL=true` to force local/non-proxy token behaviour.
