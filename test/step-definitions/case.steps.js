@@ -9,6 +9,11 @@ import {
   resolveScenarioString
 } from '../utils/scenario-data.js'
 import { assertBadRequestResponse } from '../utils/response-assertions.js'
+import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
+import {
+  assertStringFieldsMasked,
+  assertStringFieldsUnmasked
+} from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -45,34 +50,53 @@ function toResponseLike(error, uri) {
   }
 }
 
+function getCaseResponsePayload(res) {
+  return res.data?.data || res.data
+}
+
+async function sendCaseCreateRequest({
+  world,
+  includeApplicationReference = true,
+  usePiiAuthorisedClient = false
+}) {
+  tokenGen = usePiiAuthorisedClient
+    ? await tokenForPiiAuthorisedClient(world)
+    : await token(tokenUrl, clientId, secretId)
+
+  const endpoint = getScenarioValue('caseCreate.endpoint')
+  const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
+
+  const payload = getScenarioValue('caseCreate.validPayload')
+  if (includeApplicationReference) {
+    payload.applicationReferenceNumber = makeApplicationReferenceNumber()
+  } else {
+    delete payload.applicationReferenceNumber
+  }
+
+  let res
+  try {
+    res = await axios.post(uri, payload, {
+      timeout: 25 * 1000,
+      headers: {
+        Authorization: `Bearer ${tokenGen}`,
+        'Content-Type': 'application/json'
+      }
+    })
+  } catch (error) {
+    res = toResponseLike(error, uri)
+  }
+
+  world.response = res
+  world.requestPayload = payload
+  world.requestUri = uri
+  world.tokenGen = tokenGen
+}
+
 Given(
   'the user submits a case create request with valid body',
   { timeout: 30 * 1000 },
   async function () {
-    tokenGen = await token(tokenUrl, clientId, secretId)
-
-    const endpoint = getScenarioValue('caseCreate.endpoint')
-    const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
-
-    const payload = getScenarioValue('caseCreate.validPayload')
-    payload.applicationReferenceNumber = makeApplicationReferenceNumber()
-
-    let res
-    try {
-      res = await axios.post(uri, payload, {
-        timeout: 25 * 1000,
-        headers: {
-          Authorization: `Bearer ${tokenGen}`,
-          'Content-Type': 'application/json'
-        }
-      })
-    } catch (error) {
-      res = toResponseLike(error, uri)
-    }
-
-    this.response = res
-    this.requestPayload = payload
-    this.requestUri = uri
+    await sendCaseCreateRequest({ world: this })
   }
 )
 
@@ -80,30 +104,21 @@ Given(
   'the user submits a case create request missing application reference',
   { timeout: 30 * 1000 },
   async function () {
-    tokenGen = await token(tokenUrl, clientId, secretId)
+    await sendCaseCreateRequest({
+      world: this,
+      includeApplicationReference: false
+    })
+  }
+)
 
-    const endpoint = getScenarioValue('caseCreate.endpoint')
-    const uri = `${baseUrl.replace(/\/$/, '')}/${endpoint}`
-
-    const payload = getScenarioValue('caseCreate.validPayload')
-    delete payload.applicationReferenceNumber
-
-    let res
-    try {
-      res = await axios.post(uri, payload, {
-        timeout: 25 * 1000,
-        headers: {
-          Authorization: `Bearer ${tokenGen}`,
-          'Content-Type': 'application/json'
-        }
-      })
-    } catch (error) {
-      res = toResponseLike(error, uri)
-    }
-
-    this.response = res
-    this.requestPayload = payload
-    this.requestUri = uri
+Given(
+  'the user submits a case create request with valid body using PII-authorised client',
+  { timeout: 30 * 1000 },
+  async function () {
+    await sendCaseCreateRequest({
+      world: this,
+      usePiiAuthorisedClient: true
+    })
   }
 )
 
@@ -150,3 +165,75 @@ Then(
     expect(normalisedActual).to.equal(normalisedExpected)
   }
 )
+
+Then('the case API should return masked PII fields', async function () {
+  const res = this.response
+  const created = responseCodes?.created ?? responseCodes?.Created ?? 201
+
+  expect(res.status).to.equal(created)
+
+  const createdCase = getCaseResponsePayload(res)
+
+  assertStringFieldsMasked(
+    createdCase.applicant,
+    ['emailAddress'],
+    'case applicant'
+  )
+  assertStringFieldsMasked(
+    createdCase.applicant.name,
+    ['firstName', 'lastName'],
+    'case applicant name'
+  )
+
+  for (const keyFact of ['originAddress', 'destinationAddress']) {
+    assertStringFieldsMasked(
+      createdCase.keyFacts[keyFact].value,
+      ['addressLine1', 'addressTown', 'addressPostcode'],
+      `case ${keyFact}`
+    )
+  }
+
+  for (const keyFact of ['originKeeperName', 'destinationKeeperName']) {
+    assertStringFieldsMasked(
+      createdCase.keyFacts[keyFact].value,
+      ['firstName', 'lastName'],
+      `case ${keyFact}`
+    )
+  }
+})
+
+Then('the case API should return unmasked PII fields', async function () {
+  const res = this.response
+  const created = responseCodes?.created ?? responseCodes?.Created ?? 201
+
+  expect(res.status).to.equal(created)
+
+  const createdCase = getCaseResponsePayload(res)
+
+  assertStringFieldsUnmasked(
+    createdCase.applicant,
+    ['emailAddress'],
+    'case applicant'
+  )
+  assertStringFieldsUnmasked(
+    createdCase.applicant.name,
+    ['firstName', 'lastName'],
+    'case applicant name'
+  )
+
+  for (const keyFact of ['originAddress', 'destinationAddress']) {
+    assertStringFieldsUnmasked(
+      createdCase.keyFacts[keyFact].value,
+      ['addressLine1', 'addressTown', 'addressPostcode'],
+      `case ${keyFact}`
+    )
+  }
+
+  for (const keyFact of ['originKeeperName', 'destinationKeeperName']) {
+    assertStringFieldsUnmasked(
+      createdCase.keyFacts[keyFact].value,
+      ['firstName', 'lastName'],
+      `case ${keyFact}`
+    )
+  }
+})

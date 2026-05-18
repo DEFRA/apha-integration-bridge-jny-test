@@ -193,7 +193,8 @@ class Properties {
         tokenEnv: picked.tokenEnv ?? '',
         tokenUrl,
         clientId,
-        clientSecret
+        clientSecret,
+        piiAuthorisedClient: picked.piiAuthorisedClient
       }
     }
   }

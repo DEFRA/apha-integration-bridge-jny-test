@@ -31,7 +31,17 @@ Feature: (AIL-282) Locations endpoint tests
       | endpoint                  | id                       |
       | {{locations.endpoint}}    | {{locations.validId}}    |
 
-  Scenario Outline: 04 Verify that, Unsuccessful response (404) should be returned for a non-existent LocationId
+  Scenario: 04 Verify non-PII authorised client receives masked location details
+    Given the user submits "{{locations.endpoint}}" "{{locations.validId}}" request
+    When the request is processed by the system
+    Then the locations API should return masked PII fields
+
+  Scenario: 05 Verify PII-authorised client receives unmasked location details
+    Given the user submits "{{locations.endpoint}}" "{{locations.validId}}" request using PII-authorised client
+    When the request is processed by the system
+    Then the locations API should return unmasked PII fields
+
+  Scenario Outline: 06 Verify that, Unsuccessful response (404) should be returned for a non-existent LocationId
     Given the user submits "<endpoint>" "<id>" request
     When the request is processed by the system
     Then endpoint return unsuccessful response code "<statuscode>" "<msg>"
@@ -41,7 +51,7 @@ Feature: (AIL-282) Locations endpoint tests
       | {{locations.endpoint}}    | {{locations.notFoundId}}    | 404        | Location not found         |
       | {{locations.endpoint}}    | {{locations.noRouteId}}     | 404        | No route: [GET] /locations |
 
-  Scenario Outline: 05 Verify that the appropriate error message is returned when a user supplies an invalid location number
+  Scenario Outline: 07 Verify that the appropriate error message is returned when a user supplies an invalid location number
     Given the user submits "<endpoint>" "<id>" request
     When the request is processed by the system
     Then endpoint must return unsuccessful error response "<message>"
