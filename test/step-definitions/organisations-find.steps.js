@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -18,8 +18,8 @@ import {
 } from '../utils/address-assertions.js'
 import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 import {
-  assertStringFieldMasked,
-  assertStringFieldUnmasked
+  assertStringFieldsMasked,
+  assertStringFieldsUnmasked
 } from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
@@ -274,39 +274,31 @@ Then(
   'the organisations find API should return masked PII fields',
   async function () {
     const res = this.response
+    const organisations = assertOkResponseWithDataArray(res)
 
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const organisation of res.data.data) {
-      assertStringFieldMasked(
+    for (const organisation of organisations) {
+      assertStringFieldsMasked(
         organisation,
-        'organisationName',
+        ['organisationName'],
         `organisation ${organisation.id}`
       )
 
-      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
-        assertStringFieldMasked(
-          organisation.address,
-          key,
-          `organisation ${organisation.id} address`
-        )
-      }
+      assertStringFieldsMasked(
+        organisation.address,
+        ['street', 'locality', 'town', 'county', 'postcode'],
+        `organisation ${organisation.id} address`
+      )
 
       for (const contactType of ['primaryContact', 'secondaryContact']) {
         const contact = organisation.contactDetails?.[contactType] || null
 
         if (!contact) continue
 
-        for (const key of ['fullName', 'emailAddress', 'phoneNumber']) {
-          assertStringFieldMasked(
-            contact,
-            key,
-            `organisation ${organisation.id} ${contactType}`
-          )
-        }
+        assertStringFieldsMasked(
+          contact,
+          ['fullName', 'emailAddress', 'phoneNumber'],
+          `organisation ${organisation.id} ${contactType}`
+        )
       }
     }
   }
@@ -316,39 +308,31 @@ Then(
   'the organisations find API should return unmasked PII fields',
   async function () {
     const res = this.response
+    const organisations = assertOkResponseWithDataArray(res)
 
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const organisation of res.data.data) {
-      assertStringFieldUnmasked(
+    for (const organisation of organisations) {
+      assertStringFieldsUnmasked(
         organisation,
-        'organisationName',
+        ['organisationName'],
         `organisation ${organisation.id}`
       )
 
-      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
-        assertStringFieldUnmasked(
-          organisation.address,
-          key,
-          `organisation ${organisation.id} address`
-        )
-      }
+      assertStringFieldsUnmasked(
+        organisation.address,
+        ['street', 'locality', 'town', 'county', 'postcode'],
+        `organisation ${organisation.id} address`
+      )
 
       for (const contactType of ['primaryContact', 'secondaryContact']) {
         const contact = organisation.contactDetails?.[contactType] || null
 
         if (!contact) continue
 
-        for (const key of ['fullName', 'emailAddress', 'phoneNumber']) {
-          assertStringFieldUnmasked(
-            contact,
-            key,
-            `organisation ${organisation.id} ${contactType}`
-          )
-        }
+        assertStringFieldsUnmasked(
+          contact,
+          ['fullName', 'emailAddress', 'phoneNumber'],
+          `organisation ${organisation.id} ${contactType}`
+        )
       }
     }
   }

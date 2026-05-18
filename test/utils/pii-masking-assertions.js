@@ -32,6 +32,12 @@ export function assertStringFieldMasked(object, key, label) {
   assertMaskedStringValue(value, `${label}.${key}`)
 }
 
+export function assertStringFieldsMasked(object, keys, label) {
+  for (const key of keys) {
+    assertStringFieldMasked(object, key, label)
+  }
+}
+
 export function assertUnmaskedStringValue(value, label) {
   if (value === null || value === '') return
 
@@ -49,4 +55,10 @@ export function assertUnmaskedStringValue(value, label) {
 export function assertStringFieldUnmasked(object, key, label) {
   const value = getRequiredString(object, key, label)
   assertUnmaskedStringValue(value, `${label}.${key}`)
+}
+
+export function assertStringFieldsUnmasked(object, keys, label) {
+  for (const key of keys) {
+    assertStringFieldUnmasked(object, key, label)
+  }
 }

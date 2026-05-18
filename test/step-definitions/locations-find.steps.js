@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -18,8 +18,8 @@ import {
 } from '../utils/address-assertions.js'
 import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 import {
-  assertStringFieldMasked,
-  assertStringFieldUnmasked
+  assertStringFieldsMasked,
+  assertStringFieldsUnmasked
 } from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
@@ -414,22 +414,15 @@ Then(
   'the locations find API should return masked PII fields',
   async function () {
     const res = this.response
+    const locations = assertOkResponseWithDataArray(res)
 
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const location of res.data.data) {
-      assertStringFieldMasked(location, 'name', `location ${location.id}`)
-
-      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
-        assertStringFieldMasked(
-          location.address,
-          key,
-          `location ${location.id} address`
-        )
-      }
+    for (const location of locations) {
+      assertStringFieldsMasked(location, ['name'], `location ${location.id}`)
+      assertStringFieldsMasked(
+        location.address,
+        ['street', 'locality', 'town', 'county', 'postcode'],
+        `location ${location.id} address`
+      )
     }
   }
 )
@@ -438,22 +431,15 @@ Then(
   'the locations find API should return unmasked PII fields',
   async function () {
     const res = this.response
+    const locations = assertOkResponseWithDataArray(res)
 
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const location of res.data.data) {
-      assertStringFieldUnmasked(location, 'name', `location ${location.id}`)
-
-      for (const key of ['street', 'locality', 'town', 'county', 'postcode']) {
-        assertStringFieldUnmasked(
-          location.address,
-          key,
-          `location ${location.id} address`
-        )
-      }
+    for (const location of locations) {
+      assertStringFieldsUnmasked(location, ['name'], `location ${location.id}`)
+      assertStringFieldsUnmasked(
+        location.address,
+        ['street', 'locality', 'town', 'county', 'postcode'],
+        `location ${location.id} address`
+      )
     }
   }
 )

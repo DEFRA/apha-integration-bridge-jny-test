@@ -3,7 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor, responseCodes } from '../utils/token.js'
+import { token, strProcessor } from '../utils/token.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -18,8 +18,8 @@ import {
 } from '../utils/address-assertions.js'
 import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 import {
-  assertStringFieldMasked,
-  assertStringFieldUnmasked
+  assertStringFieldsMasked,
+  assertStringFieldsUnmasked
 } from '../utils/pii-masking-assertions.js'
 
 const baseUrl = cfg.baseUrl
@@ -293,47 +293,35 @@ Then(
   'the customers find API should return masked PII fields',
   async function () {
     const res = this.response || response
+    const customers = assertOkResponseWithDataArray(res)
 
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const customer of res.data.data) {
-      for (const key of ['title', 'firstName', 'middleName', 'lastName']) {
-        assertStringFieldMasked(customer, key, `customer ${customer.id}`)
-      }
+    for (const customer of customers) {
+      assertStringFieldsMasked(
+        customer,
+        ['title', 'firstName', 'middleName', 'lastName'],
+        `customer ${customer.id}`
+      )
 
       for (let index = 0; index < customer.addresses.length; index++) {
         const address = customer.addresses[index]
 
-        for (const key of [
-          'street',
-          'locality',
-          'town',
-          'county',
-          'postcode'
-        ]) {
-          assertStringFieldMasked(
-            address,
-            key,
-            `customer ${customer.id} address ${index}`
-          )
-        }
+        assertStringFieldsMasked(
+          address,
+          ['street', 'locality', 'town', 'county', 'postcode'],
+          `customer ${customer.id} address ${index}`
+        )
       }
 
       for (let index = 0; index < customer.contactDetails.length; index++) {
         const contact = customer.contactDetails[index]
 
-        for (const key of ['emailAddress', 'phoneNumber'].filter((key) =>
-          Object.hasOwn(contact, key)
-        )) {
-          assertStringFieldMasked(
-            contact,
-            key,
-            `customer ${customer.id} contactDetail ${index}`
-          )
-        }
+        assertStringFieldsMasked(
+          contact,
+          ['emailAddress', 'phoneNumber'].filter((key) =>
+            Object.hasOwn(contact, key)
+          ),
+          `customer ${customer.id} contactDetail ${index}`
+        )
       }
     }
   }
@@ -343,47 +331,35 @@ Then(
   'the customers find API should return unmasked PII fields',
   async function () {
     const res = this.response || response
+    const customers = assertOkResponseWithDataArray(res)
 
-    expect(res.status).to.equal(responseCodes.ok)
-    expect(res.data).to.have.property('data')
-    expect(res.data.data).to.be.an('array')
-    expect(res.data.data.length).to.be.greaterThan(0)
-
-    for (const customer of res.data.data) {
-      for (const key of ['title', 'firstName', 'middleName', 'lastName']) {
-        assertStringFieldUnmasked(customer, key, `customer ${customer.id}`)
-      }
+    for (const customer of customers) {
+      assertStringFieldsUnmasked(
+        customer,
+        ['title', 'firstName', 'middleName', 'lastName'],
+        `customer ${customer.id}`
+      )
 
       for (let index = 0; index < customer.addresses.length; index++) {
         const address = customer.addresses[index]
 
-        for (const key of [
-          'street',
-          'locality',
-          'town',
-          'county',
-          'postcode'
-        ]) {
-          assertStringFieldUnmasked(
-            address,
-            key,
-            `customer ${customer.id} address ${index}`
-          )
-        }
+        assertStringFieldsUnmasked(
+          address,
+          ['street', 'locality', 'town', 'county', 'postcode'],
+          `customer ${customer.id} address ${index}`
+        )
       }
 
       for (let index = 0; index < customer.contactDetails.length; index++) {
         const contact = customer.contactDetails[index]
 
-        for (const key of ['emailAddress', 'phoneNumber'].filter((key) =>
-          Object.hasOwn(contact, key)
-        )) {
-          assertStringFieldUnmasked(
-            contact,
-            key,
-            `customer ${customer.id} contactDetail ${index}`
-          )
-        }
+        assertStringFieldsUnmasked(
+          contact,
+          ['emailAddress', 'phoneNumber'].filter((key) =>
+            Object.hasOwn(contact, key)
+          ),
+          `customer ${customer.id} contactDetail ${index}`
+        )
       }
     }
   }
