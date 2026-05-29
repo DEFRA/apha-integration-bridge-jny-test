@@ -4,7 +4,7 @@
   "type": "module",
   "description": "",
   "engines": {
-    "node": ">=22.13.1"
+    "node": ">=24.1.0"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
@@ -34,13 +34,13 @@
     "report:publish": "npm run report && ./bin/publish-tests.sh"
   },
   "dependencies": {
-    "@cucumber/cucumber": "10.9.0",
-    "axios": "1.12.2",
+    "@cucumber/cucumber": "12.9.0",
+    "axios": "1.16.1",
     "chai": "5.2.0",
     "deepmerge": "4.3.1",
     "esm-module-alias": "2.2.1",
     "global-agent": "3.0.0",
-    "undici": "7.22.0"
+    "undici": "7.26.0"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
