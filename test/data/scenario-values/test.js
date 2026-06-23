@@ -19,6 +19,14 @@ export default {
       idsMissing: { workOrderIds: ['WS-72034'] }
     }
   },
+  workorders: {
+    nullFirstNameCustomerProbe: {
+      page: '3',
+      pageSize: '50',
+      startDate: '1900-01-01T00:00:00.000Z',
+      endDate: '2100-01-01T00:00:00.000Z'
+    }
+  },
   organisationsFind: {
     validIds: ['C120664'],
     invalidBodies: {

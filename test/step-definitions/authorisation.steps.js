@@ -55,6 +55,11 @@ function errorMessageFrom(data) {
   return data?.message ?? data?.Message ?? data?.error ?? data?.errorMessage
 }
 
+function expectHeader(headers, name, expectedValue) {
+  expect(headers).to.have.property(name)
+  expect(headers[name]).to.equal(expectedValue)
+}
+
 async function sendAuthorisedLocationsFindRequest({
   world,
   endpt,
@@ -132,3 +137,33 @@ Then(
     expect(errorMessageFrom(res.data)).to.equal(message)
   }
 )
+
+Then('the API response status should be {string}', async function (statusCode) {
+  const res = this.response
+
+  if (!res) throw new Error('No response captured at all (unexpected).')
+  expect(res.status.toString()).to.equal(statusCode)
+})
+
+Then('the API response should include security headers', async function () {
+  const res = this.response
+
+  if (!res) throw new Error('No response captured at all (unexpected).')
+
+  const expectedHeaders = {
+    'cache-control': 'no-store',
+    pragma: 'no-cache',
+    'content-security-policy':
+      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    'referrer-policy': 'no-referrer',
+    'cross-origin-opener-policy': 'same-origin',
+    'cross-origin-resource-policy': 'same-origin',
+    'permissions-policy':
+      'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+    'x-xss-protection': '0'
+  }
+
+  for (const [name, value] of Object.entries(expectedHeaders)) {
+    expectHeader(res.headers, name, value)
+  }
+})

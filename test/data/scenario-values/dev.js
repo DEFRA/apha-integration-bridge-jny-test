@@ -18,6 +18,12 @@ export default {
     maxPageSize: '100',
     invalidPageSize: {
       tooLarge: '101'
+    },
+    nullFirstNameCustomerProbe: {
+      page: '155',
+      pageSize: '1',
+      startDate: '2020-01-01T00:00:00.000Z',
+      endDate: '2035-01-01T00:00:00.000Z'
     }
   }
 }
