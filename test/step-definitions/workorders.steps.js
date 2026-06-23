@@ -587,6 +587,25 @@ Then(
 )
 
 Then(
+  'the workorders API should return a successful non-empty response for page {string} pageSize {string}',
+  async function (page, pageSize) {
+    const expectedPage = resolveArg(page)
+    const expectedPageSize = resolveArg(pageSize)
+    const res = this.response || response
+    const workorders = assertOkResponseWithDataArray(res)
+
+    expect(workorders.length).to.be.at.most(Number(expectedPageSize))
+
+    expect(res.data).to.have.property('links')
+    expect(res.data.links).to.have.property('self')
+
+    const qs = parseQueryString(res.data.links.self)
+    expect(qs.get('page')).to.equal(expectedPage)
+    expect(qs.get('pageSize')).to.equal(expectedPageSize)
+  }
+)
+
+Then(
   'the workorders API should return results filtered by updated date for page {string} pageSize {string}',
   async function (page, pageSize) {
     const expectedPage = resolveArg(page)

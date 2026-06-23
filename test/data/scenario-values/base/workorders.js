@@ -8,6 +8,12 @@ export default {
     discoveryPageSize: '50',
     pageSize: '50'
   },
+  nullFirstNameCustomerProbe: {
+    page: '1',
+    pageSize: '1',
+    startDate: '2022-02-18T09:54:09.778Z',
+    endDate: '2026-02-18T09:54:09.778Z'
+  },
   startDate: '2022-02-18T09:54:09.778Z',
   endDate: '2026-02-18T09:54:09.778Z',
   startUpdatedDate: '2022-02-18T09:54:09.778Z',

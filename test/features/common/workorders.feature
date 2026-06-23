@@ -152,3 +152,8 @@ Feature: Workorders endpoint tests
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.invalidPageSize.tooLarge}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
     When the request is processed by the system
     Then the workorders API should return a validation error response
+
+  Scenario: 25 Verify workorder linked to customer without first name can be retrieved
+    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.nullFirstNameCustomerProbe.page}}" pageSize "{{workorders.nullFirstNameCustomerProbe.pageSize}}" startActivationDate "{{workorders.nullFirstNameCustomerProbe.startDate}}" endActivationDate "{{workorders.nullFirstNameCustomerProbe.endDate}}"
+    When the request is processed by the system
+    Then the workorders API should return a successful non-empty response for page "{{workorders.nullFirstNameCustomerProbe.page}}" pageSize "{{workorders.nullFirstNameCustomerProbe.pageSize}}"
