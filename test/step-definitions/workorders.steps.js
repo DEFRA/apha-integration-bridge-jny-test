@@ -14,9 +14,9 @@ import {
   assertActivitiesOrderedBySequenceNumber,
   assertActivitiesHaveOperationalDetails,
   assertActivitiesHaveStatus,
-  assertWorkorderActivityShape,
   assertWorkorderHasStatus
 } from '../utils/workorder-activity-assertions.js'
+import { assertWorkorderShape as assertSharedWorkorderShape } from '../utils/workorder-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -50,6 +50,10 @@ function expectStringOrNull(object, key) {
   if (value !== null) {
     expect(value).to.be.a('string')
   }
+}
+
+function assertWorkorderShape(workorder) {
+  assertSharedWorkorderShape(workorder, { allowNullRelationshipData: true })
 }
 
 const parseQueryString = (urlOrPath) => {
@@ -365,75 +369,6 @@ function assertWorkordersResponseForAllCountries({
   ).to.satisfy((countries) =>
     countries.some((country) => country !== 'SCOTLAND')
   )
-}
-
-function assertWorkorderShape(workorder) {
-  expect(workorder).to.have.property('type', 'workorders')
-  expect(workorder).to.have.property('id')
-  expect(workorder.id).to.be.a('string')
-
-  expectStringOrNull(workorder, 'activationDate')
-  expectStringOrNull(workorder, 'updatedDate')
-  expectStringOrNull(workorder, 'businessArea')
-  expectStringOrNull(workorder, 'workArea')
-  expectStringOrNull(workorder, 'country')
-  expectStringOrNull(workorder, 'aim')
-  expectStringOrNull(workorder, 'purpose')
-  expectStringOrNull(workorder, 'earliestActivityStartDate')
-  expectStringOrNull(workorder, 'targetDate')
-  expectStringOrNull(workorder, 'species')
-  expectStringOrNull(workorder, 'phase')
-  assertWorkorderHasStatus(workorder)
-
-  expect(workorder).to.have.property('activities')
-  expect(workorder.activities).to.be.an('array')
-
-  for (const activity of workorder.activities) {
-    assertWorkorderActivityShape(activity)
-  }
-
-  expect(workorder).to.have.property('relationships')
-  expect(workorder.relationships).to.be.an('object')
-
-  const { relationships } = workorder
-  const assertRelationshipObjectData = (relationshipName, typeIfPresent) => {
-    expect(relationships).to.have.property(relationshipName)
-    expect(relationships[relationshipName]).to.have.property('data')
-
-    const relationshipData = relationships[relationshipName].data
-    if (relationshipData === null) return
-
-    expect(relationshipData).to.be.an('object')
-    if (typeIfPresent) {
-      expect(relationshipData).to.have.property('type', typeIfPresent)
-    } else {
-      expect(relationshipData).to.have.property('type')
-      expect(relationshipData.type).to.be.a('string')
-    }
-    expect(relationshipData).to.have.property('id')
-    expect(relationshipData.id).to.be.a('string')
-  }
-
-  const assertRelationshipArrayData = (relationshipName, itemType) => {
-    expect(relationships).to.have.property(relationshipName)
-    expect(relationships[relationshipName]).to.have.property('data')
-
-    const relationshipData = relationships[relationshipName].data
-    if (relationshipData === null) return
-
-    expect(relationshipData).to.be.an('array')
-    for (const item of relationshipData) {
-      expect(item).to.have.property('type', itemType)
-      expect(item).to.have.property('id')
-      expect(item.id).to.be.a('string')
-    }
-  }
-
-  assertRelationshipObjectData('customerOrOrganisation')
-  assertRelationshipObjectData('holding', 'holdings')
-  assertRelationshipArrayData('facilities', 'facilities')
-  assertRelationshipObjectData('location', 'locations')
-  assertRelationshipArrayData('livestockUnits', 'animal-commodities')
 }
 
 Given(

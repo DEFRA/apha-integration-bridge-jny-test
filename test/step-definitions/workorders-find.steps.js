@@ -5,6 +5,7 @@ import { expect } from 'chai'
 import { cfg, makeUri } from '../../config/properties.js'
 import { token, strProcessor } from '../utils/token.js'
 import {
+  getScenarioValue,
   resolveScenarioString,
   resolveScenarioValue
 } from '../utils/scenario-data.js'
@@ -16,9 +17,13 @@ import {
   assertActivitiesOrderedBySequenceNumber,
   assertActivitiesHaveOperationalDetails,
   assertActivitiesHaveStatus,
-  assertWorkorderActivityShape,
   assertWorkorderHasStatus
 } from '../utils/workorder-activity-assertions.js'
+import {
+  assertWorkorderShape,
+  findWorkorderById,
+  getWorkorderLivestockUnitIds
+} from '../utils/workorder-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -36,14 +41,6 @@ function toResponseLike(error, uri) {
       message: error?.message || 'Network error with no HTTP response',
       uri
     }
-  }
-}
-
-function expectStringOrNull(object, key) {
-  expect(object).to.have.property(key)
-  const value = object[key]
-  if (value !== null) {
-    expect(value).to.be.a('string')
   }
 }
 
@@ -164,74 +161,6 @@ function assertUpdatedDateField(workorder) {
       Number.isNaN(timestamp),
       `Invalid updatedDate for workorder ${workorder.id}: ${workorder.updatedDate}`
     ).to.equal(false)
-  }
-}
-
-function assertWorkorderShape(workorder) {
-  expect(workorder).to.have.property('type', 'workorders')
-  expect(workorder).to.have.property('id')
-  expect(workorder.id).to.be.a('string')
-
-  expectStringOrNull(workorder, 'activationDate')
-  expectStringOrNull(workorder, 'updatedDate')
-  expectStringOrNull(workorder, 'businessArea')
-  expectStringOrNull(workorder, 'workArea')
-  expectStringOrNull(workorder, 'country')
-  expectStringOrNull(workorder, 'aim')
-  expectStringOrNull(workorder, 'purpose')
-  expectStringOrNull(workorder, 'earliestActivityStartDate')
-  expectStringOrNull(workorder, 'targetDate')
-  expectStringOrNull(workorder, 'species')
-  expectStringOrNull(workorder, 'phase')
-  assertWorkorderHasStatus(workorder)
-
-  expect(workorder).to.have.property('activities')
-  expect(workorder.activities).to.be.an('array')
-
-  for (const activity of workorder.activities) {
-    assertWorkorderActivityShape(activity)
-  }
-
-  expect(workorder).to.have.property('relationships')
-  expect(workorder.relationships).to.be.an('object')
-
-  const { relationships } = workorder
-  expect(relationships).to.have.property('customerOrOrganisation')
-  expect(relationships.customerOrOrganisation).to.have.property('data')
-  expect(relationships.customerOrOrganisation.data).to.be.an('object')
-  expect(relationships.customerOrOrganisation.data).to.have.property('type')
-  expect(relationships.customerOrOrganisation.data).to.have.property('id')
-
-  expect(relationships).to.have.property('holding')
-  expect(relationships.holding).to.have.property('data')
-  expect(relationships.holding.data).to.be.an('object')
-  expect(relationships.holding.data).to.have.property('type', 'holdings')
-  expect(relationships.holding.data).to.have.property('id')
-  expect(relationships.holding.data.id).to.be.a('string')
-
-  expect(relationships).to.have.property('facilities')
-  expect(relationships.facilities).to.have.property('data')
-  expect(relationships.facilities.data).to.be.an('array')
-  for (const facility of relationships.facilities.data) {
-    expect(facility).to.have.property('type', 'facilities')
-    expect(facility).to.have.property('id')
-    expect(facility.id).to.be.a('string')
-  }
-
-  expect(relationships).to.have.property('location')
-  expect(relationships.location).to.have.property('data')
-  expect(relationships.location.data).to.be.an('object')
-  expect(relationships.location.data).to.have.property('type', 'locations')
-  expect(relationships.location.data).to.have.property('id')
-  expect(relationships.location.data.id).to.be.a('string')
-
-  expect(relationships).to.have.property('livestockUnits')
-  expect(relationships.livestockUnits).to.have.property('data')
-  expect(relationships.livestockUnits.data).to.be.an('array')
-  for (const livestockUnit of relationships.livestockUnits.data) {
-    expect(livestockUnit).to.have.property('type', 'animal-commodities')
-    expect(livestockUnit).to.have.property('id')
-    expect(livestockUnit.id).to.be.a('string')
   }
 }
 
@@ -422,5 +351,37 @@ Then(
     }
 
     assertActivitiesOrderedBySequenceNumber(workorders)
+  }
+)
+
+Then(
+  'the workorders find API should return livestock units in the expected order for ids {string}',
+  async function (ids) {
+    const submittedIds = resolveValueArg(ids)
+    const expectedOrderById = getScenarioValue(
+      'workordersFind.expectedLivestockUnitOrderById'
+    )
+    const findWorkorders = assertOkResponseWithDataArray(this.response)
+
+    for (const workorder of findWorkorders) {
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
+    }
+
+    for (const submittedId of submittedIds) {
+      if (!Object.hasOwn(expectedOrderById, submittedId)) continue
+
+      const findWorkorder = findWorkorderById(
+        findWorkorders,
+        submittedId,
+        'POST workorders find'
+      )
+      const findLivestockUnitIds = getWorkorderLivestockUnitIds(findWorkorder)
+      const expectedLivestockUnitIds = expectedOrderById[submittedId]
+
+      expect(
+        findLivestockUnitIds,
+        `Expected POST /workorders/find livestock unit order for ${submittedId} to match expected GET order. Expected order: ${expectedLivestockUnitIds.join(', ') || '(none)'}. Actual order: ${findLivestockUnitIds.join(', ') || '(none)'}`
+      ).to.deep.equal(expectedLivestockUnitIds)
+    }
   }
 )
