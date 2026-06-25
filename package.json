@@ -34,7 +34,7 @@
     "report:publish": "npm run report && ./bin/publish-tests.sh"
   },
   "dependencies": {
-    "@cucumber/cucumber": "12.9.0",
+    "@cucumber/cucumber": "13.0.0",
     "axios": "1.18.0",
     "chai": "6.2.2",
     "deepmerge": "4.3.1",
