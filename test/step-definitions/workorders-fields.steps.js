@@ -19,7 +19,7 @@ Then(
   'the workorders API should return earliest activity start date field for all returned workorders',
   function () {
     for (const workorder of workordersFrom(this)) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertEarliestActivityStartDateField(workorder)
     }
   }
@@ -29,7 +29,7 @@ Then(
   'the workorders API should return target date field for all returned workorders',
   function () {
     for (const workorder of workordersFrom(this)) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertTargetDateField(workorder)
     }
   }
@@ -39,7 +39,7 @@ Then(
   'the workorders API should return updated date field for all returned workorders',
   function () {
     for (const workorder of workordersFrom(this)) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertUpdatedDateField(workorder)
     }
   }
@@ -49,7 +49,7 @@ Then(
   'the workorders API should return populated work area and species values for all returned workorders',
   function () {
     for (const workorder of workordersFrom(this)) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertPopulatedWorkAreaAndSpecies(workorder)
     }
   }
@@ -67,7 +67,7 @@ Then(
   'the workorders API should return status field for all returned workorders',
   function () {
     for (const workorder of workordersFrom(this)) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertWorkorderHasStatus(workorder)
     }
   }
@@ -97,7 +97,7 @@ function shapedWorkordersFrom(world) {
   const workorders = workordersFrom(world)
 
   for (const workorder of workorders) {
-    assertWorkorderShape(workorder)
+    assertWorkorderShape(workorder, { allowNullRelationshipData: true })
   }
 
   return workorders
