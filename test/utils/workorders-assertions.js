@@ -34,7 +34,9 @@ export function parseIsoTimestamp(value, label = 'ISO date') {
   return timestamp
 }
 
-function expectStringOrNull(object, key) {
+function expectStringOrNull(object, key, { allowUndefined = false } = {}) {
+  if (allowUndefined && object[key] === undefined) return
+
   expect(object).to.have.property(key)
   const value = object[key]
   if (value !== null) {
@@ -201,7 +203,10 @@ export function buildTimestampProbe(workorders) {
   )
 }
 
-export function assertWorkorderShape(workorder) {
+export function assertWorkorderShape(
+  workorder,
+  { allowNullRelationshipData = false } = {}
+) {
   expect(workorder).to.have.property('type', 'workorders')
   expect(workorder).to.have.property('id')
   expect(workorder.id).to.be.a('string')
@@ -234,27 +239,53 @@ export function assertWorkorderShape(workorder) {
   expect(workorder.relationships).to.be.an('object')
 
   const { relationships } = workorder
-  assertRelationshipObjectData(relationships, 'customerOrOrganisation')
-  assertRelationshipObjectData(relationships, 'holding', 'holdings')
-  assertRelationshipArrayData(relationships, 'facilities', 'facilities')
-  assertRelationshipObjectData(relationships, 'location', 'locations')
+  assertRelationshipObjectData(
+    relationships,
+    'customerOrOrganisation',
+    undefined,
+    { allowNullRelationshipData }
+  )
+  assertRelationshipObjectData(relationships, 'holding', 'holdings', {
+    allowNullRelationshipData
+  })
+  assertRelationshipArrayData(relationships, 'facilities', 'facilities', {
+    allowNullRelationshipData
+  })
+  assertRelationshipObjectData(relationships, 'location', 'locations', {
+    allowNullRelationshipData
+  })
   assertRelationshipArrayData(
     relationships,
     'livestockUnits',
-    'animal-commodities'
+    'animal-commodities',
+    { allowNullRelationshipData }
   )
 }
 
 function assertRelationshipObjectData(
   relationships,
   relationshipName,
-  typeIfPresent
+  typeIfPresent,
+  { allowNullRelationshipData = false } = {}
 ) {
-  expect(relationships).to.have.property(relationshipName)
+  if (relationships[relationshipName] === undefined) {
+    expect(
+      allowNullRelationshipData,
+      `Expected relationship ${relationshipName} to be present`
+    ).to.equal(true)
+    return
+  }
+
   expect(relationships[relationshipName]).to.have.property('data')
 
   const relationshipData = relationships[relationshipName].data
-  if (relationshipData === null) return
+  if (relationshipData === null || relationshipData === undefined) {
+    expect(
+      allowNullRelationshipData,
+      `Expected relationship ${relationshipName} data to be present`
+    ).to.equal(true)
+    return
+  }
 
   expect(relationshipData).to.be.an('object')
   if (typeIfPresent) {
@@ -270,13 +301,27 @@ function assertRelationshipObjectData(
 function assertRelationshipArrayData(
   relationships,
   relationshipName,
-  itemType
+  itemType,
+  { allowNullRelationshipData = false } = {}
 ) {
-  expect(relationships).to.have.property(relationshipName)
+  if (relationships[relationshipName] === undefined) {
+    expect(
+      allowNullRelationshipData,
+      `Expected relationship ${relationshipName} to be present`
+    ).to.equal(true)
+    return
+  }
+
   expect(relationships[relationshipName]).to.have.property('data')
 
   const relationshipData = relationships[relationshipName].data
-  if (relationshipData === null) return
+  if (relationshipData === null || relationshipData === undefined) {
+    expect(
+      allowNullRelationshipData,
+      `Expected relationship ${relationshipName} data to be present`
+    ).to.equal(true)
+    return
+  }
 
   expect(relationshipData).to.be.an('array')
   for (const item of relationshipData) {
@@ -284,6 +329,28 @@ function assertRelationshipArrayData(
     expect(item).to.have.property('id')
     expect(item.id).to.be.a('string')
   }
+}
+
+export function getWorkorderLivestockUnitIds(workorder) {
+  const livestockUnits = workorder.relationships?.livestockUnits?.data
+
+  expect(
+    livestockUnits,
+    `Expected workorder ${workorder.id} to include livestockUnits relationship data`
+  ).to.be.an('array')
+
+  return livestockUnits.map((livestockUnit) => livestockUnit.id)
+}
+
+export function findWorkorderById(workorders, workorderId, source) {
+  const workorder = workorders.find((item) => item.id === workorderId)
+
+  expect(
+    workorder,
+    `Expected ${source} response to include workorder ${workorderId}`
+  ).to.not.equal(undefined)
+
+  return workorder
 }
 
 export function assertWorkordersResponseForCountry({

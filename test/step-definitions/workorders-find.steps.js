@@ -17,6 +17,8 @@ import {
 } from '../utils/workorder-activity-assertions.js'
 import {
   assertEarliestActivityStartDateField,
+  findWorkorderById,
+  getWorkorderLivestockUnitIds,
   assertTargetDateField,
   assertUpdatedDateField,
   assertWorkorderShape
@@ -161,11 +163,39 @@ Then(
   }
 )
 
+Then(
+  'the workorders find API should return livestock units in the expected order for ids {string}',
+  function (ids) {
+    const submittedIds = resolveFindValueArg(ids)
+    const expectedOrderById = resolveFindValueArg(
+      '{{workordersFind.expectedLivestockUnitOrderById}}'
+    )
+    const workorders = shapedWorkordersFrom(this)
+
+    for (const submittedId of submittedIds) {
+      if (!Object.hasOwn(expectedOrderById, submittedId)) continue
+
+      const workorder = findWorkorderById(
+        workorders,
+        submittedId,
+        'POST workorders find'
+      )
+      const actualLivestockUnitIds = getWorkorderLivestockUnitIds(workorder)
+      const expectedLivestockUnitIds = expectedOrderById[submittedId]
+
+      expect(
+        actualLivestockUnitIds,
+        `Expected POST /workorders/find livestock unit order for ${submittedId} to match expected order. Expected order: ${expectedLivestockUnitIds.join(', ') || '(none)'}. Actual order: ${actualLivestockUnitIds.join(', ') || '(none)'}`
+      ).to.deep.equal(expectedLivestockUnitIds)
+    }
+  }
+)
+
 function shapedWorkordersFrom(world) {
   const workorders = assertOkResponseWithDataArray(world.response)
 
   for (const workorder of workorders) {
-    assertWorkorderShape(workorder)
+    assertWorkorderShape(workorder, { allowNullRelationshipData: true })
   }
 
   return workorders

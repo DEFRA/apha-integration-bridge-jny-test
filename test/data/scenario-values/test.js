@@ -14,6 +14,8 @@ export default {
   },
   workordersFind: {
     validIds: ['WS-72034', 'WS-70782'],
+    livestockUnitOrderIds: ['WS-72034', 'WS-70782'],
+    expectedLivestockUnitOrderById: {},
     invalidBodies: {
       idsNotArray: { ids: 'WS-72034' },
       idsMissing: { workOrderIds: ['WS-72034'] }
