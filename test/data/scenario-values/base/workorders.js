@@ -23,6 +23,9 @@ export default {
     wales: 'WALES',
     england: 'ENGLAND'
   },
+  status: {
+    open: 'Open'
+  },
   invalidCountry: {
     unsupported: 'NORTHERN_IRELAND'
   },

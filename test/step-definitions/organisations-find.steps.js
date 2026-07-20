@@ -1,13 +1,6 @@
 import { Given, Then } from '@cucumber/cucumber'
-import axios from 'axios'
 import { expect } from 'chai'
 
-import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor } from '../utils/token.js'
-import {
-  resolveScenarioString,
-  resolveScenarioValue
-} from '../utils/scenario-data.js'
 import {
   assertBadRequestResponse,
   assertOkResponseWithDataArray
@@ -16,81 +9,23 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from '../utils/address-assertions.js'
-import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 import {
-  assertStringFieldsMasked,
-  assertStringFieldsUnmasked
-} from '../utils/pii-masking-assertions.js'
-
-const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
-
-const resolveStringArg = (raw) => resolveScenarioString(strProcessor(raw))
-const resolveValueArg = (raw) => resolveScenarioValue(raw)
-const normalisePath = (p) => (p || '').replace(/^\/+/, '')
-
-function toResponseLike(error, uri) {
-  if (error?.response) return error.response
-  return {
-    status: 0,
-    data: {
-      code: 'NETWORK_ERROR',
-      message: error?.message || 'Network error with no HTTP response',
-      uri
-    }
-  }
-}
-
-async function sendOrganisationsFindRequest({
-  world,
-  endpt,
-  body,
-  includeBody = true,
-  usePiiAuthorisedClient = false,
-  tokenMode = 'valid'
-}) {
-  const endpoint = resolveStringArg(endpt)
-  const cachedToken = usePiiAuthorisedClient
-    ? await tokenForPiiAuthorisedClient(world)
-    : world.tokenGen || (await token(tokenUrl, clientId, secretId))
-
-  let tokenGen = cachedToken
-
-  if (tokenMode === 'invalid') {
-    tokenGen = 'sss'
-  } else if (tokenMode === 'tampered') {
-    tokenGen = `${cachedToken}a`
-  }
-
-  const uri = makeUri(baseUrl, endpoint, '')
-  const requestConfig = {
-    method: 'post',
-    url: uri,
-    headers: {
-      Authorization: `Bearer ${tokenGen}`,
-      Accept: 'application/json',
-      ...(includeBody ? { 'Content-Type': 'application/json' } : {})
-    },
-    ...(includeBody ? { data: body } : {})
-  }
-
-  try {
-    world.response = await axios.request(requestConfig)
-  } catch (error) {
-    world.response = toResponseLike(error, uri)
-  }
-
-  world.endpoint = endpoint
-  world.tokenGen = tokenGen
-}
+  assertOrganisationPiiMasked,
+  assertOrganisationPiiUnmasked
+} from '../utils/pii-find-assertions.js'
+import { assertFindLinks } from '../utils/find-response-assertions.js'
+import {
+  resolveFindValueArg,
+  sendFindPostRequest
+} from '../utils/find-request.js'
 
 Given(
   'the user submits {string} organisations find POST request with ids {string}',
   async function (endpt, ids) {
-    await sendOrganisationsFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) }
+      body: { ids: resolveFindValueArg(ids) }
     })
   }
 )
@@ -98,10 +33,10 @@ Given(
 Given(
   'the user submits {string} organisations find POST request with ids {string} using invalid token',
   async function (endpt, ids) {
-    await sendOrganisationsFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       tokenMode: 'invalid'
     })
   }
@@ -110,10 +45,10 @@ Given(
 Given(
   'the user submits {string} organisations find POST request with ids {string} using tampered token',
   async function (endpt, ids) {
-    await sendOrganisationsFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       tokenMode: 'tampered'
     })
   }
@@ -122,7 +57,7 @@ Given(
 Given(
   'the user submits {string} organisations find POST request with no body',
   async function (endpt) {
-    await sendOrganisationsFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
       includeBody: false
@@ -133,10 +68,10 @@ Given(
 Given(
   'the user submits {string} organisations find POST request with raw body {string}',
   async function (endpt, rawBody) {
-    await sendOrganisationsFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: resolveValueArg(rawBody)
+      body: resolveFindValueArg(rawBody)
     })
   }
 )
@@ -144,10 +79,10 @@ Given(
 Given(
   'the user submits {string} organisations find POST request with ids {string} using PII-authorised client',
   async function (endpt, ids) {
-    await sendOrganisationsFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       usePiiAuthorisedClient: true
     })
   }
@@ -165,36 +100,12 @@ Then(
 Then(
   'the organisations find API should return matching organisations for ids {string}',
   async function (ids) {
-    const submittedIds = resolveValueArg(ids)
+    const submittedIds = resolveFindValueArg(ids)
     const res = this.response
     const organisations = assertOkResponseWithDataArray(res)
 
     expect(res.data).to.have.property('links')
-    expect(res.data.links).to.be.an('object')
-    expect(res.data.links).to.have.property('self')
-    expect(res.data.links).to.have.property('prev')
-    expect(res.data.links).to.have.property('next')
-
-    const assertLinkPath = (linkValue, fieldName, required) => {
-      if (required) {
-        expect(linkValue, `${fieldName} link must be provided`).to.be.a(
-          'string'
-        )
-      } else if (linkValue === null) {
-        return
-      } else {
-        expect(linkValue, `${fieldName} link must be a string or null`).to.be.a(
-          'string'
-        )
-      }
-
-      const pathPart = normalisePath(String(linkValue).split('?')[0])
-      expect(pathPart).to.equal('organisations/find')
-    }
-
-    assertLinkPath(res.data.links.self, 'self', true)
-    assertLinkPath(res.data.links.prev, 'prev', false)
-    assertLinkPath(res.data.links.next, 'next', false)
+    assertFindLinks(res.data.links, 'organisations/find')
 
     const returnedIds = organisations.map((organisation) => organisation.id)
     const uniqueReturnedIds = new Set(returnedIds)
@@ -273,67 +184,13 @@ Then(
 Then(
   'the organisations find API should return masked PII fields',
   async function () {
-    const res = this.response
-    const organisations = assertOkResponseWithDataArray(res)
-
-    for (const organisation of organisations) {
-      assertStringFieldsMasked(
-        organisation,
-        ['organisationName'],
-        `organisation ${organisation.id}`
-      )
-
-      assertStringFieldsMasked(
-        organisation.address,
-        ['street', 'locality', 'town', 'county', 'postcode'],
-        `organisation ${organisation.id} address`
-      )
-
-      for (const contactType of ['primaryContact', 'secondaryContact']) {
-        const contact = organisation.contactDetails?.[contactType] || null
-
-        if (!contact) continue
-
-        assertStringFieldsMasked(
-          contact,
-          ['fullName', 'emailAddress', 'phoneNumber'],
-          `organisation ${organisation.id} ${contactType}`
-        )
-      }
-    }
+    assertOrganisationPiiMasked(assertOkResponseWithDataArray(this.response))
   }
 )
 
 Then(
   'the organisations find API should return unmasked PII fields',
   async function () {
-    const res = this.response
-    const organisations = assertOkResponseWithDataArray(res)
-
-    for (const organisation of organisations) {
-      assertStringFieldsUnmasked(
-        organisation,
-        ['organisationName'],
-        `organisation ${organisation.id}`
-      )
-
-      assertStringFieldsUnmasked(
-        organisation.address,
-        ['street', 'locality', 'town', 'county', 'postcode'],
-        `organisation ${organisation.id} address`
-      )
-
-      for (const contactType of ['primaryContact', 'secondaryContact']) {
-        const contact = organisation.contactDetails?.[contactType] || null
-
-        if (!contact) continue
-
-        assertStringFieldsUnmasked(
-          contact,
-          ['fullName', 'emailAddress', 'phoneNumber'],
-          `organisation ${organisation.id} ${contactType}`
-        )
-      }
-    }
+    assertOrganisationPiiUnmasked(assertOkResponseWithDataArray(this.response))
   }
 )

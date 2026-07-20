@@ -1,111 +1,28 @@
 import { Given, Then } from '@cucumber/cucumber'
-import axios from 'axios'
 import { expect } from 'chai'
 
-import { cfg, makeUri } from '../../config/properties.js'
-import { token, strProcessor } from '../utils/token.js'
-import {
-  resolveScenarioString,
-  resolveScenarioValue
-} from '../utils/scenario-data.js'
 import {
   assertBadRequestResponse,
   assertOkResponseWithDataArray
 } from '../utils/response-assertions.js'
 import {
-  expectCountyDescriptiveNameOrNull,
-  expectInternalCountryCode
-} from '../utils/address-assertions.js'
-import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
+  assertCustomerPiiMasked,
+  assertCustomerPiiUnmasked
+} from '../utils/pii-find-assertions.js'
+import { normalisePath } from '../utils/find-response-assertions.js'
 import {
-  assertStringFieldsMasked,
-  assertStringFieldsUnmasked
-} from '../utils/pii-masking-assertions.js'
-
-const baseUrl = cfg.baseUrl
-const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
-
-let endpoint = ''
-let tokenGen = ''
-let response = ''
-let query = null
-
-const resolveStringArg = (raw) => resolveScenarioString(strProcessor(raw))
-const resolveValueArg = (raw) => resolveScenarioValue(raw)
-const normalisePath = (p) => (p || '').replace(/^\/+/, '')
-
-function toResponseLike(error, uri) {
-  if (error?.response) return error.response
-  return {
-    status: 0,
-    data: {
-      code: 'NETWORK_ERROR',
-      message: error?.message || 'Network error with no HTTP response',
-      uri
-    }
-  }
-}
-
-async function sendCustomersFindRequest({
-  world,
-  endpt,
-  body,
-  page,
-  pageSize,
-  usePiiAuthorisedClient = false,
-  tokenMode = 'valid'
-}) {
-  endpoint = resolveStringArg(endpt)
-  const cachedToken = usePiiAuthorisedClient
-    ? await tokenForPiiAuthorisedClient(world)
-    : world.tokenGen || tokenGen || (await token(tokenUrl, clientId, secretId))
-
-  if (tokenMode === 'invalid') {
-    tokenGen = 'sss'
-  } else if (tokenMode === 'tampered') {
-    tokenGen = `${cachedToken}a`
-  } else {
-    tokenGen = cachedToken
-  }
-
-  query = {}
-
-  if (page !== undefined) {
-    query.page = resolveStringArg(page)
-  }
-
-  if (pageSize !== undefined) {
-    query.pageSize = resolveStringArg(pageSize)
-  }
-
-  const uri = makeUri(baseUrl, endpoint, '')
-
-  try {
-    response = await axios.post(uri, body, {
-      params: Object.keys(query).length > 0 ? query : undefined,
-      headers: {
-        Authorization: `Bearer ${tokenGen}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      }
-    })
-  } catch (error) {
-    response = toResponseLike(error, uri)
-  }
-
-  world.response = response
-  world.endpoint = endpoint
-  world.query = query
-  world.tokenGen = tokenGen
-}
+  resolveFindValueArg,
+  sendFindPostRequest
+} from '../utils/find-request.js'
+import { assertCustomerShape } from '../utils/customers-find-assertions.js'
 
 Given(
   'the user submits {string} customers find POST request with ids {string}',
   async function (endpt, ids) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) }
+      body: { ids: resolveFindValueArg(ids) }
     })
   }
 )
@@ -113,10 +30,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with ids {string} page {string} pageSize {string}',
   async function (endpt, ids, page, pageSize) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       page,
       pageSize
     })
@@ -126,10 +43,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with ids {string} page {string} pageSize {string} using invalid token',
   async function (endpt, ids, page, pageSize) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       page,
       pageSize,
       tokenMode: 'invalid'
@@ -140,10 +57,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with ids {string} using invalid token',
   async function (endpt, ids) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       tokenMode: 'invalid'
     })
   }
@@ -152,10 +69,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with ids {string} page {string} pageSize {string} using tampered token',
   async function (endpt, ids, page, pageSize) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       page,
       pageSize,
       tokenMode: 'tampered'
@@ -166,10 +83,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with ids {string} using tampered token',
   async function (endpt, ids) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       tokenMode: 'tampered'
     })
   }
@@ -178,7 +95,7 @@ Given(
 Given(
   'the user submits {string} customers find POST request with no body',
   async function (endpt) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
       body: undefined
@@ -189,10 +106,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with raw body {string}',
   async function (endpt, rawBody) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: resolveValueArg(rawBody)
+      body: resolveFindValueArg(rawBody)
     })
   }
 )
@@ -200,10 +117,10 @@ Given(
 Given(
   'the user submits {string} customers find POST request with ids {string} using PII-authorised client',
   async function (endpt, ids) {
-    await sendCustomersFindRequest({
+    await sendFindPostRequest({
       world: this,
       endpt,
-      body: { ids: resolveValueArg(ids) },
+      body: { ids: resolveFindValueArg(ids) },
       usePiiAuthorisedClient: true
     })
   }
@@ -212,9 +129,7 @@ Given(
 Then(
   'the customers find API should return a validation error response',
   async function () {
-    const res = this.response || response
-
-    assertBadRequestResponse(res, {
+    assertBadRequestResponse(this.response, {
       expectedCode: 'BAD_REQUEST',
       expectedFirstErrorCode: 'VALIDATION_ERROR'
     })
@@ -224,67 +139,18 @@ Then(
 Then(
   'the customers find API should return matching customers for ids {string}',
   async function (ids) {
-    const submittedIds = resolveValueArg(ids)
-    const res = this.response || response
-    const customers = assertOkResponseWithDataArray(res)
+    const submittedIds = resolveFindValueArg(ids)
+    const customers = assertOkResponseWithDataArray(this.response)
 
-    expect(res.data).to.have.property('links')
-    expect(res.data.links).to.have.property('self')
+    expect(this.response.data).to.have.property('links')
+    expect(this.response.data.links).to.have.property('self')
 
-    const selfLink = res.data.links.self
+    const selfLink = this.response.data.links.self
     const pathPart = normalisePath(selfLink.split('?')[0])
     expect(pathPart).to.equal('customers/find')
 
     for (const customer of customers) {
-      expect(customer).to.have.property('type')
-      expect(customer.type).to.equal('customers')
-      expect(customer).to.have.property('id')
-      expect(customer.id).to.be.a('string')
-      expect(submittedIds).to.include(customer.id)
-      expect(customer).to.have.property('addresses')
-      expect(customer.addresses).to.be.an('array')
-      expect(customer).to.have.property('contactDetails')
-      expect(customer.contactDetails).to.be.an('array')
-      expect(customer).to.have.property('relationships')
-      expect(customer.relationships).to.be.an('object')
-
-      expect(customer).to.have.property('title')
-      expect(customer).to.have.property('firstName')
-      expect(customer).to.have.property('middleName')
-      expect(customer).to.have.property('lastName')
-
-      if (customer.title !== null) expect(customer.title).to.be.a('string')
-      if (customer.firstName !== null) {
-        expect(customer.firstName).to.be.a('string')
-      }
-      if (customer.middleName !== null) {
-        expect(customer.middleName).to.be.a('string')
-      }
-      if (customer.lastName !== null) {
-        expect(customer.lastName).to.be.a('string')
-      }
-
-      for (const address of customer.addresses) {
-        expect(address).to.have.property('primaryAddressableObject')
-        expect(address).to.have.property('secondaryAddressableObject')
-        expect(address).to.have.property('street')
-        expect(address).to.have.property('locality')
-        expect(address).to.have.property('town')
-        expect(address).to.have.property('postcode')
-        expectCountyDescriptiveNameOrNull(address, 'county', {
-          allowMasked: true
-        })
-        expectInternalCountryCode(address)
-        expect(address).to.have.property('isPreferred')
-        expect(address.isPreferred).to.be.a('boolean')
-      }
-
-      for (const contactDetail of customer.contactDetails) {
-        expect(contactDetail).to.have.property('isPreferred')
-        expect(contactDetail.isPreferred).to.be.a('boolean')
-        expect(contactDetail).to.have.property('type')
-        expect(contactDetail.type).to.be.a('string')
-      }
+      assertCustomerShape(customer, submittedIds)
     }
   }
 )
@@ -292,75 +158,13 @@ Then(
 Then(
   'the customers find API should return masked PII fields',
   async function () {
-    const res = this.response || response
-    const customers = assertOkResponseWithDataArray(res)
-
-    for (const customer of customers) {
-      assertStringFieldsMasked(
-        customer,
-        ['title', 'firstName', 'middleName', 'lastName'],
-        `customer ${customer.id}`
-      )
-
-      for (let index = 0; index < customer.addresses.length; index++) {
-        const address = customer.addresses[index]
-
-        assertStringFieldsMasked(
-          address,
-          ['street', 'locality', 'town', 'county', 'postcode'],
-          `customer ${customer.id} address ${index}`
-        )
-      }
-
-      for (let index = 0; index < customer.contactDetails.length; index++) {
-        const contact = customer.contactDetails[index]
-
-        assertStringFieldsMasked(
-          contact,
-          ['emailAddress', 'phoneNumber'].filter((key) =>
-            Object.hasOwn(contact, key)
-          ),
-          `customer ${customer.id} contactDetail ${index}`
-        )
-      }
-    }
+    assertCustomerPiiMasked(assertOkResponseWithDataArray(this.response))
   }
 )
 
 Then(
   'the customers find API should return unmasked PII fields',
   async function () {
-    const res = this.response || response
-    const customers = assertOkResponseWithDataArray(res)
-
-    for (const customer of customers) {
-      assertStringFieldsUnmasked(
-        customer,
-        ['title', 'firstName', 'middleName', 'lastName'],
-        `customer ${customer.id}`
-      )
-
-      for (let index = 0; index < customer.addresses.length; index++) {
-        const address = customer.addresses[index]
-
-        assertStringFieldsUnmasked(
-          address,
-          ['street', 'locality', 'town', 'county', 'postcode'],
-          `customer ${customer.id} address ${index}`
-        )
-      }
-
-      for (let index = 0; index < customer.contactDetails.length; index++) {
-        const contact = customer.contactDetails[index]
-
-        assertStringFieldsUnmasked(
-          contact,
-          ['emailAddress', 'phoneNumber'].filter((key) =>
-            Object.hasOwn(contact, key)
-          ),
-          `customer ${customer.id} contactDetail ${index}`
-        )
-      }
-    }
+    assertCustomerPiiUnmasked(assertOkResponseWithDataArray(this.response))
   }
 )

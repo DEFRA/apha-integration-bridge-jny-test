@@ -1,11 +1,9 @@
 import { Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber'
-import axios from 'axios'
 import { expect } from 'chai'
 
-import { cfg, makeUri } from '../../config/properties.js'
+import { cfg } from '../../config/properties.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
 import { assertBadRequestResponse } from '../utils/response-assertions.js'
-import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 
 import {
   token,
@@ -21,29 +19,12 @@ const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 setDefaultTimeout(30 * 1000)
 
 // Legacy fallback (kept so older steps don’t suddenly break if any still rely on module state)
-let id = ''
-let endpoint = ''
+const id = ''
+const endpoint = ''
 let tokenGen = ''
 let response = ''
 
 const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
-
-function toResponseLike(error, uri) {
-  if (error?.response) return error.response
-  return {
-    status: 0,
-    data: {
-      code: 'NETWORK_ERROR',
-      message: error?.message || 'Network error with no HTTP response',
-      uri,
-      axiosError: {
-        isAxiosError: !!error?.isAxiosError,
-        cause: String(error?.cause || ''),
-        name: error?.name
-      }
-    }
-  }
-}
 
 // ===== Given steps (shared) =====
 
@@ -51,107 +32,6 @@ Given(/^the auth token$/, async function () {
   tokenGen = await token(tokenUrl, clientId, secretId)
   this.tokenGen = tokenGen
 })
-
-Given(
-  'the user submits {string} {string} request with invalid token',
-  async function (endpt, actualid) {
-    endpoint = resolveArg(endpt)
-    id = resolveArg(actualid)
-
-    tokenGen = 'sss'
-    const uri = makeUri(baseUrl, endpoint, id)
-
-    try {
-      response = await axios.get(uri, {
-        headers: { Authorization: `Bearer ${tokenGen}` }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    // Prefer per-scenario World state
-    this.response = response
-    this.endpoint = endpoint
-    this.id = id
-    this.tokenGen = tokenGen
-  }
-)
-
-Given(
-  'the user submits {string} {string} with valid token but tampered',
-  async function (endpt, actualid) {
-    endpoint = resolveArg(endpt)
-    id = resolveArg(actualid)
-
-    tokenGen = await token(tokenUrl, clientId, secretId)
-    tokenGen = tokenGen + 'a'
-
-    const uri = makeUri(baseUrl, endpoint, id)
-
-    try {
-      response = await axios.get(uri, {
-        headers: { Authorization: `Bearer ${tokenGen}` }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    this.response = response
-    this.endpoint = endpoint
-    this.id = id
-    this.tokenGen = tokenGen
-  }
-)
-
-Given(
-  'the user submits {string} {string} request',
-  async function (endpt, actualid) {
-    endpoint = resolveArg(endpt)
-    id = resolveArg(actualid)
-
-    // Prefer token from World if Given the auth token ran
-    tokenGen = this.tokenGen || tokenGen
-
-    const uri = makeUri(baseUrl, endpoint, id)
-
-    try {
-      response = await axios.get(uri, {
-        headers: { Authorization: `Bearer ${tokenGen}` }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    this.response = response
-    this.endpoint = endpoint
-    this.id = id
-  }
-)
-
-Given(
-  'the user submits {string} {string} request using PII-authorised client',
-  async function (endpt, actualid) {
-    endpoint = resolveArg(endpt)
-    id = resolveArg(actualid)
-
-    tokenGen = await tokenForPiiAuthorisedClient(this)
-
-    const uri = makeUri(baseUrl, endpoint, id)
-
-    try {
-      response = await axios.get(uri, {
-        headers: { Authorization: `Bearer ${tokenGen}` }
-      })
-    } catch (error) {
-      response = toResponseLike(error, uri)
-    }
-
-    this.response = response
-    this.endpoint = endpoint
-    this.id = id
-    this.tokenGen = tokenGen
-  }
-)
 
 // ===== When step (shared) =====
 

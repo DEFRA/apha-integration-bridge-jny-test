@@ -11,9 +11,9 @@ import {
 import { assertBadRequestResponse } from '../utils/response-assertions.js'
 import { tokenForPiiAuthorisedClient } from '../utils/pii-authorisation.js'
 import {
-  assertStringFieldsMasked,
-  assertStringFieldsUnmasked
-} from '../utils/pii-masking-assertions.js'
+  assertCasePiiMasked,
+  assertCasePiiUnmasked
+} from '../utils/case-pii-assertions.js'
 
 const baseUrl = cfg.baseUrl
 const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
@@ -174,32 +174,7 @@ Then('the case API should return masked PII fields', async function () {
 
   const createdCase = getCaseResponsePayload(res)
 
-  assertStringFieldsMasked(
-    createdCase.applicant,
-    ['emailAddress'],
-    'case applicant'
-  )
-  assertStringFieldsMasked(
-    createdCase.applicant.name,
-    ['firstName', 'lastName'],
-    'case applicant name'
-  )
-
-  for (const keyFact of ['originAddress', 'destinationAddress']) {
-    assertStringFieldsMasked(
-      createdCase.keyFacts[keyFact].value,
-      ['addressLine1', 'addressTown', 'addressPostcode'],
-      `case ${keyFact}`
-    )
-  }
-
-  for (const keyFact of ['originKeeperName', 'destinationKeeperName']) {
-    assertStringFieldsMasked(
-      createdCase.keyFacts[keyFact].value,
-      ['firstName', 'lastName'],
-      `case ${keyFact}`
-    )
-  }
+  assertCasePiiMasked(createdCase)
 })
 
 Then('the case API should return unmasked PII fields', async function () {
@@ -210,30 +185,5 @@ Then('the case API should return unmasked PII fields', async function () {
 
   const createdCase = getCaseResponsePayload(res)
 
-  assertStringFieldsUnmasked(
-    createdCase.applicant,
-    ['emailAddress'],
-    'case applicant'
-  )
-  assertStringFieldsUnmasked(
-    createdCase.applicant.name,
-    ['firstName', 'lastName'],
-    'case applicant name'
-  )
-
-  for (const keyFact of ['originAddress', 'destinationAddress']) {
-    assertStringFieldsUnmasked(
-      createdCase.keyFacts[keyFact].value,
-      ['addressLine1', 'addressTown', 'addressPostcode'],
-      `case ${keyFact}`
-    )
-  }
-
-  for (const keyFact of ['originKeeperName', 'destinationKeeperName']) {
-    assertStringFieldsUnmasked(
-      createdCase.keyFacts[keyFact].value,
-      ['firstName', 'lastName'],
-      `case ${keyFact}`
-    )
-  }
+  assertCasePiiUnmasked(createdCase)
 })
