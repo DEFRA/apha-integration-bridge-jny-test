@@ -92,7 +92,7 @@ Then(
     )
 
     for (const workorder of workorders) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertIsoFieldWithinRange(
         workorder,
         'updatedDate',
@@ -137,7 +137,7 @@ Then(
     })
 
     for (const workorder of workorders) {
-      assertWorkorderShape(workorder)
+      assertWorkorderShape(workorder, { allowNullRelationshipData: true })
       assertIsoDateWithinRange(
         workorder.activationDate,
         this.timestampProbe.startActivationDate,

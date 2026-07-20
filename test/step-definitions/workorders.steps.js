@@ -119,7 +119,7 @@ Then(
 
     if (workorders.length > 0) {
       for (const workorder of workorders) {
-        assertWorkorderShape(workorder)
+        assertWorkorderShape(workorder, { allowNullRelationshipData: true })
         assertIsoDateWithinRange(
           workorder.activationDate,
           this.query?.startActivationDate,

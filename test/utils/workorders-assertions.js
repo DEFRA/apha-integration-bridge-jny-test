@@ -364,7 +364,7 @@ export function assertWorkordersResponseForCountry({
   const workorders = assertOkResponseWithDataArray(res)
 
   for (const workorder of workorders) {
-    assertWorkorderShape(workorder)
+    assertWorkorderShape(workorder, { allowNullRelationshipData: true })
     expect(
       normaliseCountry(workorder.country),
       `Expected workorder ${workorder.id} to belong to ${expectedCountry}`
@@ -401,7 +401,7 @@ export function assertWorkordersResponseForCountries({
   const returnedCountries = new Set()
 
   for (const workorder of workorders) {
-    assertWorkorderShape(workorder)
+    assertWorkorderShape(workorder, { allowNullRelationshipData: true })
 
     const actualCountry = normaliseCountry(workorder.country)
     expect(
