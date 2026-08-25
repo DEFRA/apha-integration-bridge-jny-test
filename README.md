@@ -286,8 +286,8 @@ Expected environment-specific secret variables:
 - `EXT_TEST_SECRET`
 - `PROD_SECRET`
 
-Ext-test also requires `EXT_TEST_CLIENT_ID`. Its Cognito token environment is
-`8ec5c`, and its API base URL is
+Ext-test uses the client ID configured in `config/env/ext-test.js`. Its Cognito
+token environment is `8ec5c`, and its API base URL is
 `https://apha-integration-bridge.api.ext-test.cdp-int.defra.cloud`.
 PII-authorised scenarios are excluded from ext-test until a separate
 PII-authorised Cognito client is available there. Scenarios tagged
