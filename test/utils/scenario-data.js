@@ -5,6 +5,7 @@ import base from '../data/scenario-values/base.js'
 import dev from '../data/scenario-values/dev.js'
 import test from '../data/scenario-values/test.js'
 import perfTest from '../data/scenario-values/perf-test.js'
+import extTest from '../data/scenario-values/ext-test.js'
 import prod from '../data/scenario-values/prod.js'
 import local from '../data/scenario-values/local.js'
 
@@ -13,6 +14,7 @@ const envValues = {
   dev,
   test,
   'perf-test': perfTest,
+  'ext-test': extTest,
   prod
 }
 

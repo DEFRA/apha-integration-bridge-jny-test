@@ -3,18 +3,27 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { pathToFileURL } from 'node:url'
 
 const CUCUMBER_BIN = 'node_modules/@cucumber/cucumber/bin/cucumber.js'
 const CUCUMBER_JSON = 'allure-results/cucumber-report.json'
 const LOADER_IMPORT =
   'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("esm-module-alias/loader", pathToFileURL("./"));'
 const DEFAULT_FEATURE_ROOT = 'test/features'
+export const SUPPORTED_ENVIRONMENTS = [
+  'local',
+  'dev',
+  'test',
+  'perf-test',
+  'ext-test',
+  'prod'
+]
 const CASE_MANAGEMENT_FEATURES = [
   'test/features/common/case.feature',
   'test/features/common/users-find-by-email.feature'
 ]
 
-function parseRunnerArgs(rawArgs) {
+export function parseRunnerArgs(rawArgs) {
   let envNameOverride = ''
   const cucumberArgs = []
 
@@ -38,33 +47,40 @@ function parseRunnerArgs(rawArgs) {
   return { envNameOverride, cucumberArgs }
 }
 
-function pickEnvironment(envNameOverride) {
-  if (String(envNameOverride || '').trim()) {
-    return String(envNameOverride).trim()
+export function pickEnvironment(envNameOverride, environment = process.env) {
+  const fromEnv = String(envNameOverride || '').trim()
+    ? envNameOverride
+    : environment.ENV_NAME ||
+      environment.environment ||
+      environment.ENVIRONMENT ||
+      environment.npm_config_environment
+
+  const envName = String(fromEnv || 'dev').trim()
+  if (!SUPPORTED_ENVIRONMENTS.includes(envName)) {
+    throw new Error(
+      `Unsupported environment "${envName}". Expected one of: ${SUPPORTED_ENVIRONMENTS.join(', ')}.`
+    )
   }
-
-  const fromEnv =
-    process.env.ENV_NAME ||
-    process.env.environment ||
-    process.env.ENVIRONMENT ||
-    process.env.npm_config_environment
-
-  return String(fromEnv || 'dev').trim()
+  return envName
 }
 
-function normaliseTags(rawTags, envName) {
+export function normaliseTags(rawTags, envName) {
   const fallback = `@${envName}`
   const raw = String(rawTags || '').trim()
+  let tags
 
-  if (!raw) return fallback
-  if (raw.includes('@')) return raw
-  if (/\b(and|or|not)\b/i.test(raw)) return raw
-  if (/[()]/.test(raw)) return raw
+  if (!raw) tags = fallback
+  else if (raw.includes('@')) tags = raw
+  else if (/\b(and|or|not)\b/i.test(raw)) tags = raw
+  else if (/[()]/.test(raw)) tags = raw
+  else tags = `@${raw}`
 
-  return `@${raw}`
+  return envName === 'ext-test'
+    ? `(${tags}) and not (@requires-pii-authorised-client or @requires-stable-environment-data)`
+    : tags
 }
 
-function parseList(rawValue) {
+export function parseList(rawValue) {
   return String(rawValue || '')
     .split(',')
     .map((item) => item.trim())
@@ -110,14 +126,18 @@ function splitFeatureTargets(rawArgs) {
   return { featureTargets, passthroughArgs }
 }
 
-function resolveFeatureTargets(envName, explicitFeatureTargets) {
+export function resolveFeatureTargets(
+  envName,
+  explicitFeatureTargets,
+  environment = process.env
+) {
   if (explicitFeatureTargets.length > 0) {
     return explicitFeatureTargets
   }
 
-  const includeOverride = parseList(process.env.CUCUMBER_FEATURES)
+  const includeOverride = parseList(environment.CUCUMBER_FEATURES)
   const excludeOverride = new Set(
-    parseList(process.env.CUCUMBER_EXCLUDE_FEATURES).map(normaliseFilePath)
+    parseList(environment.CUCUMBER_EXCLUDE_FEATURES).map(normaliseFilePath)
   )
 
   if (includeOverride.length > 0) {
@@ -126,7 +146,7 @@ function resolveFeatureTargets(envName, explicitFeatureTargets) {
     )
   }
 
-  const caseManagementEnabled = process.env.CASE_MANAGEMENT_ENABLED === 'true'
+  const caseManagementEnabled = environment.CASE_MANAGEMENT_ENABLED === 'true'
   const envExclusions = caseManagementEnabled ? [] : CASE_MANAGEMENT_FEATURES
   const excludedFeatures = new Set(
     [...envExclusions, ...excludeOverride].map(normaliseFilePath)
@@ -137,7 +157,7 @@ function resolveFeatureTargets(envName, explicitFeatureTargets) {
   )
 }
 
-function collectSummaryFromJson(pathToReport) {
+export function collectSummaryFromJson(pathToReport) {
   if (!fs.existsSync(pathToReport)) return null
 
   const raw = fs.readFileSync(pathToReport, 'utf8').trim()
@@ -237,58 +257,87 @@ function printFriendlySummary(pathToReport) {
   }
 }
 
-const { envNameOverride, cucumberArgs } = parseRunnerArgs(process.argv.slice(2))
-const envName = pickEnvironment(envNameOverride)
-const tags = normaliseTags(process.env.CUCUMBER_TAGS, envName)
-const {
-  featureTargets: explicitFeatureTargets,
-  passthroughArgs: cucumberPassthroughArgs
-} = splitFeatureTargets(cucumberArgs)
-const featureTargets = resolveFeatureTargets(envName, explicitFeatureTargets)
-const nodeMajorVersion = Number.parseInt(
-  process.versions.node.split('.')[0],
-  10
-)
+export function runCucumber(rawArgs = process.argv.slice(2)) {
+  fs.rmSync('FAILED', { force: true })
 
-fs.mkdirSync('allure-results', { recursive: true })
+  const { envNameOverride, cucumberArgs } = parseRunnerArgs(rawArgs)
+  const envName = pickEnvironment(envNameOverride)
+  const tags = normaliseTags(process.env.CUCUMBER_TAGS, envName)
+  const {
+    featureTargets: explicitFeatureTargets,
+    passthroughArgs: cucumberPassthroughArgs
+  } = splitFeatureTargets(cucumberArgs)
+  const featureTargets = resolveFeatureTargets(envName, explicitFeatureTargets)
 
-const args = [
-  ...(nodeMajorVersion >= 20
-    ? ['--import', LOADER_IMPORT]
-    : ['--loader', 'esm-module-alias/loader']),
-  CUCUMBER_BIN,
-  '--import',
-  'test/step-definitions/*.js',
-  '--format',
-  'progress',
-  '--format',
-  `json:${CUCUMBER_JSON}`,
-  '--tags',
-  tags,
-  ...featureTargets,
-  ...cucumberPassthroughArgs
-]
-
-const run = spawnSync('node', args, {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    ENV_NAME: process.env.ENV_NAME || envName
+  if (featureTargets.length === 0) {
+    throw new Error('No feature files were selected for this test run.')
   }
-})
 
-const status = run.status ?? 1
-printFriendlySummary(CUCUMBER_JSON)
+  const missingTargets = featureTargets.filter(
+    (target) => !fs.existsSync(target)
+  )
+  if (missingTargets.length > 0) {
+    throw new Error(`Feature files not found: ${missingTargets.join(', ')}`)
+  }
 
-if (status !== 0) {
-  const failure = {
-    status,
-    envName,
+  const nodeMajorVersion = Number.parseInt(
+    process.versions.node.split('.')[0],
+    10
+  )
+  fs.mkdirSync('allure-results', { recursive: true })
+
+  const args = [
+    ...(nodeMajorVersion >= 20
+      ? ['--import', LOADER_IMPORT]
+      : ['--loader', 'esm-module-alias/loader']),
+    CUCUMBER_BIN,
+    '--import',
+    'test/step-definitions/*.js',
+    '--format',
+    'progress',
+    '--format',
+    `json:${CUCUMBER_JSON}`,
+    '--tags',
     tags,
-    command: `node ${args.join(' ')}`,
-    timestamp: new Date().toISOString()
+    ...featureTargets,
+    ...cucumberPassthroughArgs
+  ]
+
+  const run = spawnSync('node', args, {
+    stdio: 'inherit',
+    env: { ...process.env, ENV_NAME: envName }
+  })
+
+  const summary = collectSummaryFromJson(CUCUMBER_JSON)
+  const noScenarios = summary?.scenarioCounts.total === 0
+  const status = noScenarios ? 1 : (run.status ?? 1)
+  printFriendlySummary(CUCUMBER_JSON)
+
+  if (noScenarios) {
+    process.stderr.write(
+      '[runner] No scenarios matched the selected features and tags.\n'
+    )
   }
-  fs.writeFileSync('FAILED', JSON.stringify(failure))
+
+  if (status !== 0) {
+    const failure = {
+      status,
+      envName,
+      tags,
+      command: `node ${args.join(' ')}`,
+      timestamp: new Date().toISOString()
+    }
+    fs.writeFileSync('FAILED', JSON.stringify(failure))
+  }
+
+  return status
 }
 
-process.exit(status)
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try {
+    process.exit(runCucumber())
+  } catch (error) {
+    process.stderr.write(`[runner] ${error.message}\n`)
+    process.exit(1)
+  }
+}

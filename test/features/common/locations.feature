@@ -1,41 +1,30 @@
-@dev @test @perf-test @prod
+@dev @test @perf-test @ext-test @prod
 Feature: (AIL-282) Locations endpoint tests
 
   Background:
     Given the auth token
 
-  Scenario Outline: 01 Verify that, Unauthorised response (401) should be returned if token is empty
-    Given the user submits "<endpoint>" "<id>" request with invalid token
+  Scenario: 01 Verify unauthorised response (401) is returned when the token is empty
+    Given the user submits "{{locations.endpoint}}" "{{locations.authId}}" request with invalid token
     When the request is processed by the system
-    Then endpoint return unauthorised response code "<statuscode>"
+    Then endpoint return unauthorised response code "401"
 
-    Examples:
-      | endpoint                  | id                      | statuscode |
-      | {{locations.endpoint}}    | {{locations.authId}}    | 401        |
-
-  Scenario Outline: 02 Verify that, Forbidden response (403) should be returned if token is modified or tampered
-    Given the user submits "<endpoint>" "<id>" with valid token but tampered
+  Scenario: 02 Verify forbidden response (403) is returned when the token is tampered
+    Given the user submits "{{locations.endpoint}}" "{{locations.authId}}" with valid token but tampered
     When the request is processed by the system
-    Then endpoint return unauthorised response code "<statuscode>"
+    Then endpoint return unauthorised response code "403"
 
-    Examples:
-      | endpoint                  | id                      | statuscode |
-      | {{locations.endpoint}}    | {{locations.authId}}    | 403        |
-
-  Scenario Outline: 03 Verify successful response from Locations endpoint when a valid location ID is provided
-    Given the user submits "<endpoint>" "<id>" request
+  Scenario: 03 Verify successful response when a valid location ID is provided
+    Given the user submits "{{locations.endpoint}}" "{{locations.validId}}" request
     When the request is processed by the system
     Then the API should return the location details
-
-    Examples:
-      | endpoint                  | id                       |
-      | {{locations.endpoint}}    | {{locations.validId}}    |
 
   Scenario: 04 Verify non-PII authorised client receives masked location details
     Given the user submits "{{locations.endpoint}}" "{{locations.validId}}" request
     When the request is processed by the system
     Then the locations API should return masked PII fields
 
+  @requires-pii-authorised-client
   Scenario: 05 Verify PII-authorised client receives unmasked location details
     Given the user submits "{{locations.endpoint}}" "{{locations.validId}}" request using PII-authorised client
     When the request is processed by the system

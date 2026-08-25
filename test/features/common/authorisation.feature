@@ -1,4 +1,4 @@
-@dev @test @perf-test @prod @auth
+@dev @test @perf-test @ext-test @prod @auth
 Feature: Authorised endpoint authentication
 
   Scenario: 01 Allows an authorised endpoint request with a valid Cognito access token

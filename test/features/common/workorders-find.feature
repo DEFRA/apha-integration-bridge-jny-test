@@ -1,4 +1,4 @@
-@dev @test @perf-test @prod
+@dev @test @perf-test @ext-test @prod
 Feature: Workorders endpoint tests - find workorders in batch
 
   Background:

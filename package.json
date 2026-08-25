@@ -9,9 +9,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "aliases": {
-    "~": ".",
-    "page-objects": "test/page-objects",
-    "components": "test/components"
+    "~": "."
   },
   "scripts": {
     "clean": "rm -rf allure-results && rm -rf allure-report && rm -f FAILED",
@@ -20,12 +18,14 @@
     "test:dev": "npm run clean && node ./bin/run-cucumber.mjs --env=dev",
     "test:test": "npm run clean && node ./bin/run-cucumber.mjs --env=test",
     "test:perf": "npm run clean && node ./bin/run-cucumber.mjs --env=perf-test",
+    "test:ext": "npm run clean && node ./bin/run-cucumber.mjs --env=ext-test",
     "test:prod": "npm run clean && node ./bin/run-cucumber.mjs --env=prod",
-    "test:local": "npm run test",
+    "test:local": "npm run clean && node ./bin/run-cucumber.mjs --env=local",
+    "test:unit": "node --test test/unit/*.test.mjs",
     "test:github": "npm run test",
-    "format": "prettier --write 'test/**/*.js' '**/*.{js,md,json,config.js}'",
-    "format:check": "prettier --check 'test/**/*.js' '**/*.{js,md,json,config.js}'",
-    "git:pre-commit-hook": "npm run format:check && npm run lint",
+    "format": "prettier --write 'test/**/*.{js,mjs}' 'bin/*.mjs' '**/*.{js,md,json,config.js}' 'run-journey-tests/action.yml'",
+    "format:check": "prettier --check 'test/**/*.{js,mjs}' 'bin/*.mjs' '**/*.{js,md,json,config.js}' 'run-journey-tests/action.yml'",
+    "git:pre-commit-hook": "npm run format:check && npm run lint && npm run test:unit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "postinstall": "npm run setup:husky",
@@ -38,9 +38,7 @@
     "axios": "1.18.0",
     "chai": "6.2.2",
     "deepmerge": "4.3.1",
-    "esm-module-alias": "2.2.1",
-    "global-agent": "4.1.3",
-    "undici": "8.5.0"
+    "esm-module-alias": "2.2.1"
   },
   "devDependencies": {
     "eslint": "^8.57.1",

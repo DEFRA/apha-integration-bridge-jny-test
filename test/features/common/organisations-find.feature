@@ -1,4 +1,4 @@
-@dev @test @perf-test @prod
+@dev @test @perf-test @ext-test @prod
 Feature: Organisations endpoint tests - find organisations in batch
 
   Background:
@@ -40,6 +40,7 @@ Feature: Organisations endpoint tests - find organisations in batch
     When the request is processed by the system
     Then the organisations find API should return masked PII fields
 
+  @requires-pii-authorised-client
   Scenario: 07 Verify PII-authorised client receives unmasked organisation PII
     Given the user submits "{{organisationsFind.endpoint}}" organisations find POST request with ids "{{organisationsFind.validIds}}" using PII-authorised client
     When the request is processed by the system

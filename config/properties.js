@@ -2,6 +2,7 @@ import local from './env/local.js'
 import dev from './env/dev.js'
 import testEnv from './env/test.js'
 import perfTest from './env/perf-test.js'
+import extTest from './env/ext-test.js'
 import prod from './env/prod.js'
 
 const ENV_DEFAULT = 'dev'
@@ -11,6 +12,7 @@ const SECRET_ENV_BY_ENV = {
   dev: 'DEV_SECRET',
   test: 'TEST_SECRET',
   'perf-test': 'PERF_SECRET',
+  'ext-test': 'EXT_TEST_SECRET',
   prod: 'PROD_SECRET'
 }
 
@@ -20,9 +22,15 @@ function pickEnvConfig(name) {
     dev,
     test: testEnv,
     'perf-test': perfTest,
+    'ext-test': extTest,
     prod
   }
-  return map[name] || map[ENV_DEFAULT]
+  if (!Object.hasOwn(map, name)) {
+    throw new Error(
+      `Unsupported environment "${name}". Expected one of: ${Object.keys(map).join(', ')}.`
+    )
+  }
+  return map[name]
 }
 
 function normaliseBaseUrl(raw) {
@@ -194,7 +202,8 @@ class Properties {
         tokenUrl,
         clientId,
         clientSecret,
-        piiAuthorisedClient: picked.piiAuthorisedClient
+        piiAuthorisedClient: picked.piiAuthorisedClient,
+        workordersWriteClient: picked.workordersWriteClient
       }
     }
   }

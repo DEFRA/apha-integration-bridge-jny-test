@@ -18,25 +18,18 @@ const { tokenUrl, clientId, clientSecret: secretId } = cfg.cognito
 
 setDefaultTimeout(30 * 1000)
 
-// Legacy fallback (kept so older steps don’t suddenly break if any still rely on module state)
-const id = ''
-const endpoint = ''
-let tokenGen = ''
-let response = ''
-
 const resolveArg = (raw) => resolveScenarioString(strProcessor(raw))
 
 // ===== Given steps (shared) =====
 
 Given(/^the auth token$/, async function () {
-  tokenGen = await token(tokenUrl, clientId, secretId)
-  this.tokenGen = tokenGen
+  this.tokenGen = await token(tokenUrl, clientId, secretId)
 })
 
 // ===== When step (shared) =====
 
 When(/^the request is processed by the system$/, async function () {
-  const res = this.response || response
+  const res = this.response
 
   if (!res) {
     throw new Error('No response captured at all (unexpected).')
@@ -45,7 +38,7 @@ When(/^the request is processed by the system$/, async function () {
   if (res.status === 0) {
     // eslint-disable-next-line no-console
     console.error(
-      `[NETWORK] Failed to reach API. baseUrl=${baseUrl}, endpoint=${this.endpoint || endpoint}, id=${this.id || id}\n` +
+      `[NETWORK] Failed to reach API. baseUrl=${baseUrl}, endpoint=${this.endpoint || ''}, id=${this.id || ''}\n` +
         `URI: ${res.data?.uri}\n` +
         `Message: ${res.data?.message}`
     )
@@ -53,9 +46,6 @@ When(/^the request is processed by the system$/, async function () {
 
   expect(res).to.not.equal(null)
   expect(res).to.not.equal(undefined)
-
-  // keep legacy module-global in sync
-  response = res
 })
 
 // ===== Then steps (shared) =====
@@ -64,7 +54,7 @@ Then(
   /^endpoint return unauthorised response code (.+)$/,
   async function (statusCode) {
     const expectedStatusCode = resolveArg(statusCode)
-    const res = this.response || response
+    const res = this.response
 
     if (res.status === 0) {
       throw new Error(
@@ -101,7 +91,7 @@ Then(
   async function (statusCode, statusMsg) {
     const expectedStatusCode = resolveArg(statusCode)
     const expectedStatusMsg = resolveArg(statusMsg)
-    const res = this.response || response
+    const res = this.response
 
     if (res.status === 0) {
       throw new Error(
@@ -141,9 +131,9 @@ Then(
 Then(
   /^endpoint must return unsuccessful error response (.+)$/,
   async function (expectedMessage) {
-    const res = this.response || response
-    const ep = this.endpoint || endpoint
-    const theId = this.id || id
+    const res = this.response
+    const ep = this.endpoint || ''
+    const theId = this.id || ''
     const resolvedExpectedMessage = resolveArg(expectedMessage)
     const cleanedMessage =
       resolvedExpectedMessage.startsWith('"') &&

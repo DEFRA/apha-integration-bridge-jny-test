@@ -8,5 +8,14 @@ export default {
       process.env.DEV_PII_AUTHORISED_CLIENT_ID || '42vj57of4neou791bgj337k4bf',
     clientSecret: process.env.DEV_PII_AUTHORISED_CLIENT_SECRET
   },
+  workordersWriteClient: {
+    clientId:
+      process.env.DEV_WORKORDERS_WRITE_CLIENT_ID ||
+      process.env.DEV_PII_AUTHORISED_CLIENT_ID ||
+      '42vj57of4neou791bgj337k4bf',
+    clientSecret:
+      process.env.DEV_WORKORDERS_WRITE_CLIENT_SECRET ||
+      process.env.DEV_PII_AUTHORISED_CLIENT_SECRET
+  },
   baseUrl: 'https://apha-integration-bridge.api.dev.cdp-int.defra.cloud'
 }
