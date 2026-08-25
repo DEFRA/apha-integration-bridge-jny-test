@@ -16,6 +16,9 @@ export default {
   },
   workorders: {
     maxPageSize: '100',
+    statusFilter: {
+      pageSize: '100'
+    },
     invalidPageSize: {
       tooLarge: '101'
     },

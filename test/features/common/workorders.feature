@@ -1,8 +1,10 @@
-@dev @test @perf-test @ext-test @prod
 Feature: Workorders endpoint tests
 
   Background:
     Given the auth token
+
+  @dev @test @perf-test @ext-test @prod
+  Rule: Core Get Work Orders behaviour
 
   Scenario: 01 Verify that unauthorised response (401) is returned if token is empty
     Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}" using invalid token
@@ -164,11 +166,27 @@ Feature: Workorders endpoint tests
     When the request is processed by the system
     Then the workorders API should return a successful non-empty response for page "{{workorders.nullFirstNameCustomerProbe.page}}" pageSize "{{workorders.nullFirstNameCustomerProbe.pageSize}}"
 
-  Scenario: 27 Verify status query parameter is accepted and ignored
-    Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}"
-    When the request is processed by the system
-    And the workorders API should capture returned workorder ids
-    And the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.page}}" pageSize "{{workorders.pageSize}}" startActivationDate "{{workorders.startDate}}" endActivationDate "{{workorders.endDate}}" status "{{workorders.status.open}}"
-    And the request is processed by the system
-    Then the workorders API should return the same workorder ids as previously captured
-    And the workorders API should return a self link containing the same query params
+  @dev @test @ext-test
+  Rule: Workorder status filtering
+
+    Scenario: 27 Filter workorders by a single status
+      Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.statusFilter.page}}" pageSize "{{workorders.statusFilter.pageSize}}" startActivationDate "{{workorders.statusFilter.startDate}}" endActivationDate "{{workorders.statusFilter.endDate}}" status "{{workorders.status.new}}"
+      When the request is processed by the system
+      Then the workorders API should return only workorders with status "{{workorders.status.new}}"
+      And the workorders API should return a self link containing the same query params
+
+    Scenario: 28 Filter workorders by multiple statuses
+      Given the user searches "{{workorders.endpoint}}" workorders GET pages up to "{{workorders.statusFilter.discoveryMaxPages}}" with pageSize "{{workorders.statusFilter.pageSize}}" startActivationDate "{{workorders.statusFilter.startDate}}" endActivationDate "{{workorders.statusFilter.endDate}}" status "{{workorders.status.open}}" status "{{workorders.status.new}}" until both statuses are returned
+      When the request is processed by the system
+      Then the workorders API should return workorders with both statuses "{{workorders.status.open}}" and "{{workorders.status.new}}"
+      And the workorders API should return a self link containing the same query params
+
+    Scenario: 29 Default to Open workorders when no status is supplied
+      Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.statusFilter.page}}" pageSize "{{workorders.statusFilter.pageSize}}" startActivationDate "{{workorders.statusFilter.startDate}}" endActivationDate "{{workorders.statusFilter.endDate}}"
+      When the request is processed by the system
+      Then the workorders API should return only workorders with status "{{workorders.status.open}}"
+
+    Scenario: 30 Reject an unsupported workorder status
+      Given the user submits "{{workorders.endpoint}}" workorders GET request with params page "{{workorders.statusFilter.page}}" pageSize "{{workorders.statusFilter.pageSize}}" startActivationDate "{{workorders.statusFilter.startDate}}" endActivationDate "{{workorders.statusFilter.endDate}}" status "{{workorders.status.invalid}}"
+      When the request is processed by the system
+      Then the workorders API should return a status validation error
