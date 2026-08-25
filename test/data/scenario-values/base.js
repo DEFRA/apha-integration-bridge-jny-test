@@ -7,6 +7,7 @@ import usersFind from './base/users-find.js'
 import caseCreate from './base/case-create.js'
 import customersFind from './base/customers-find.js'
 import organisationsFind from './base/organisations-find.js'
+import workordersActivity from './base/workorders-activity.js'
 
 export default {
   holdings,
@@ -17,5 +18,6 @@ export default {
   usersFind,
   caseCreate,
   customersFind,
-  organisationsFind
+  organisationsFind,
+  workordersActivity
 }

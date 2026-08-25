@@ -1,4 +1,4 @@
-@dev @test @perf-test @prod
+@dev @test @perf-test @ext-test @prod
 Feature: Case endpoint tests
 
   Background:

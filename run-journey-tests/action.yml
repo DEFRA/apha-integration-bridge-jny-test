@@ -1,58 +1,38 @@
-name: Run Journey Tests on GitHub
+name: Run APHA Integration Bridge Journey Tests
 
-description: Run the journey tests against integration layer
-
-inputs:
-  example-node-backend:
-    required: false
-    description: input
-  example-node-frontend:
-    required: false
-    description: input
+description: Run the APHA Integration Bridge API journey tests and upload the HTML report
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - uses: actions/checkout@v4
-      with:
-        repository: DEFRA/cdp-node-journey-test-suite-template
-
-    - name: Docker Login
-      uses: DEFRA/cdp-build-action/docker-login@main
 
     - uses: actions/setup-node@v4
       with:
-        node-version: 22
+        node-version-file: .nvmrc
         cache: npm
     - name: Setup the tests
       run: npm ci
       shell: bash
-    - name: Start docker compose
+    - name: Run repository checks
+      run: npm run format:check && npm run lint && npm run test:unit
       shell: bash
-      run: |
-          CDP_EXAMPLE_NODE_FRONTEND=${{inputs.example-node-frontend}} \
-          CDP_EXAMPLE_NODE_BACKEND=${{inputs.example-node-backend}} \
-          docker compose up --wait-timeout 300 -d --quiet-pull
     - name: Run the tests
+      id: journeys
+      continue-on-error: true
       shell: bash
-      run: |
-        npm run test:github
-        npm run report
-    - name: debug
+      run: npm run test:github
+    - name: Generate HTML report
       if: always()
-      run: |
-        docker compose logs > logs.txt
-        docker ps
       shell: bash
+      run: npm run report
     - name: Upload HTML report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: allure-report
         path: ./allure-report
-    - name: Upload docker compose logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-compose-logs
-        path: ./logs.txt
+    - name: Preserve journey failure status
+      if: steps.journeys.outcome == 'failure'
+      shell: bash
+      run: exit 1

@@ -8,7 +8,7 @@ Use this README as the primary development guide when adding or changing tests.
 
 ## Quick Start
 
-Use Node.js `>=24.1.0`, matching `package.json` and the Docker image.
+Use Node.js `>=24.1.0`, matching `package.json`, `.nvmrc` and the Docker image.
 
 ```bash
 npm ci
@@ -54,22 +54,22 @@ The preferred flow is:
 
 ## Folder Responsibilities
 
-| Path                                                           | Responsibility                                                                                                                             |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `bin/run-cucumber.mjs`                                         | Resolves environment, feature selection, tag selection, Cucumber imports, JSON report output and `FAILED` marker creation.                 |
-| `bin/generate-report.mjs`                                      | Builds the local HTML report from Cucumber JSON output.                                                                                    |
-| `bin/publish-tests.sh`                                         | Publishes `allure-report` to `RESULTS_OUTPUT_S3_PATH`. Used by CDP-style runs.                                                             |
-| `config/properties.js`                                         | Central configuration loader for base URLs, Cognito token URLs, client credentials and debug output.                                       |
-| `config/env/*.js`                                              | Per-environment defaults for base URL, token environment and client IDs/secrets.                                                           |
-| `test/features/common/*.feature`                               | Gherkin specifications for API journeys. Most features are tagged for all supported environments.                                          |
-| `test/step-definitions/*.js`                                   | Cucumber steps. Keep files small and cohesive; split large endpoint areas by concern, for example `workorders-country.steps.js`.           |
-| `test/utils/*.js`                                              | Shared helpers for tokens, scenario data, request builders, response assertions, PII assertions and endpoint contract assertions.          |
-| `test/data/scenario-values/base.js`                            | Aggregates shared scenario data from `test/data/scenario-values/base/*.js`.                                                                |
-| `test/data/scenario-values/{dev,test,perf-test,prod,local}.js` | Environment-specific overrides merged over base scenario data.                                                                             |
-| `test/responseprocessor/*.js`                                  | Older response wrapper pattern. It is still used by CPH tests, but new tests should prefer direct response assertions and focused helpers. |
-| `entrypoint.sh`                                                | Container entrypoint. Runs tests, generates reports, publishes reports and exits non-zero when tests fail.                                 |
-| `Dockerfile`                                                   | CDP/container image for running the journey suite.                                                                                         |
-| `run-journey-tests/action.yml`                                 | Composite GitHub action. This appears template-oriented and should be verified before relying on it for this repository.                   |
+| Path                                                                    | Responsibility                                                                                                                    |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `bin/run-cucumber.mjs`                                                  | Resolves environment, feature selection, tag selection, Cucumber imports, JSON report output and `FAILED` marker creation.        |
+| `bin/generate-report.mjs`                                               | Builds the local HTML report from Cucumber JSON output.                                                                           |
+| `bin/publish-tests.sh`                                                  | Publishes `allure-report` to `RESULTS_OUTPUT_S3_PATH`. Used by CDP-style runs.                                                    |
+| `config/properties.js`                                                  | Central configuration loader for base URLs, Cognito token URLs, client credentials and debug output.                              |
+| `config/env/*.js`                                                       | Per-environment defaults for base URL, token environment and client IDs/secrets.                                                  |
+| `test/features/common/*.feature`                                        | Gherkin specifications for API journeys. Most features are tagged for all supported environments.                                 |
+| `test/step-definitions/*.js`                                            | Cucumber steps. Keep files small and cohesive; split large endpoint areas by concern, for example `workorders-country.steps.js`.  |
+| `test/utils/*.js`                                                       | Shared helpers for tokens, scenario data, request builders, response assertions, PII assertions and endpoint contract assertions. |
+| `test/data/scenario-values/base.js`                                     | Aggregates shared scenario data from `test/data/scenario-values/base/*.js`.                                                       |
+| `test/data/scenario-values/{dev,test,perf-test,ext-test,prod,local}.js` | Environment-specific overrides merged over base scenario data.                                                                    |
+| `test/responseprocessor/cph.js`                                         | Legacy CPH response wrapper. New tests should prefer direct response assertions and focused helpers.                              |
+| `entrypoint.sh`                                                         | Container entrypoint. Runs tests, generates reports, publishes reports and exits non-zero when tests fail.                        |
+| `Dockerfile`                                                            | CDP/container image for running the journey suite.                                                                                |
+| `run-journey-tests/action.yml`                                          | Composite GitHub action that installs Node 24 dependencies, runs the suite and uploads the HTML report.                           |
 
 ## Test Format
 
@@ -166,9 +166,8 @@ The current preferred pattern is:
 - Reuse `When the request is processed by the system` from
   `shared-steps.js`.
 
-Prefer Cucumber `World` state over module-level variables. `shared-steps.js`
-still keeps some module-level state as a legacy fallback; new code should not
-depend on it.
+Use Cucumber `World` state rather than module-level variables so scenarios stay
+isolated and safe to run in any order.
 
 ## Assertions And Helpers
 
@@ -239,16 +238,6 @@ When adding tests:
 - Do not add database seeding unless the suite gains a supported local/test data
   lifecycle.
 
-## Page Objects And UI Fixtures
-
-There are no page objects in the current suite. The `page-objects` and
-`components` aliases in `package.json` are template residue rather than an
-active convention.
-
-Do not introduce page objects for API tests. If a future UI test layer is added,
-document it separately and keep it out of the API journey abstractions unless
-there is a clear shared need.
-
 ## Environment And Configuration
 
 Supported environment names are:
@@ -257,7 +246,12 @@ Supported environment names are:
 - `dev`
 - `test`
 - `perf-test`
+- `ext-test`
 - `prod`
+
+Unknown environment names fail before Cucumber starts. A run also fails when
+feature selection produces no files, references a missing feature, or matches
+zero scenarios.
 
 The runner selects the environment from:
 
@@ -289,7 +283,17 @@ Expected environment-specific secret variables:
 - `DEV_SECRET`
 - `TEST_SECRET`
 - `PERF_SECRET`
+- `EXT_TEST_SECRET`
 - `PROD_SECRET`
+
+Ext-test also requires `EXT_TEST_CLIENT_ID`. Its Cognito token environment is
+`8ec5c`, and its API base URL is
+`https://apha-integration-bridge.api.ext-test.cdp-int.defra.cloud`.
+PII-authorised scenarios are excluded from ext-test until a separate
+PII-authorised Cognito client is available there. Scenarios tagged
+`@requires-stable-environment-data` are also excluded because ext-test is used
+as a smoke target and its records are less stable than the main test
+environments.
 
 PII-authorised client overrides used by unmasked PII journeys:
 
@@ -297,6 +301,13 @@ PII-authorised client overrides used by unmasked PII journeys:
 - `DEV_PII_AUTHORISED_CLIENT_SECRET`
 - `TEST_PII_AUTHORISED_CLIENT_ID`
 - `TEST_PII_AUTHORISED_CLIENT_SECRET`
+
+The dev Workorders activity PATCH journeys use the write-authorised client. By
+default this is the configured dev PII-authorised client; override it when a
+dedicated write client is available:
+
+- `DEV_WORKORDERS_WRITE_CLIENT_ID`
+- `DEV_WORKORDERS_WRITE_CLIENT_SECRET`
 
 Rate-limit journeys are tagged `@rate-limit` and are opt-in because they make a
 short request burst. Dev is expected to use `RATE_LIMIT_POINTS=10` and
@@ -326,6 +337,15 @@ printed, but secret length and masked client IDs are shown.
 For proxy handling, non-local token requests use `HTTP_PROXY` when present.
 Set `IS_LOCAL=true` to force local/non-proxy token behaviour.
 
+Local runs use `config/env/local.js`, whose credentials are deliberately
+placeholders. Supply `COGNITO_CLIENT_ID` and `COGNITO_CLIENT_SECRET`, and use
+`JOURNEY_BASE_URL` when the API is not available at `http://localhost:3000`:
+
+```bash
+COGNITO_CLIENT_ID=... COGNITO_CLIENT_SECRET=... \
+  JOURNEY_BASE_URL=http://localhost:3000 npm run test:local
+```
+
 ## Running Tests
 
 Run all default dev features:
@@ -340,7 +360,9 @@ Run a specific environment:
 npm run test:dev
 npm run test:test
 npm run test:perf
+npm run test:ext
 npm run test:prod
+npm run test:local
 ```
 
 Run with custom tags:
@@ -376,11 +398,15 @@ CUCUMBER_TAGS="@rate-limit" node ./bin/run-cucumber.mjs --env=dev
 
 ## Reports
 
-Each run writes Cucumber JSON to:
+Each run writes Cucumber JSON to the following compatibility path:
 
 ```text
 allure-results/cucumber-report.json
 ```
+
+The project uses its own lightweight report generator; it does not use the
+Allure CLI. The `allure-results` and `allure-report` directory names are retained
+for compatibility with existing publishing and artifact paths.
 
 Generate the local HTML report:
 
@@ -410,9 +436,10 @@ generation and publishing.
 5. Exits non-zero if publishing fails, if `FAILED` exists, or if Cucumber
    returned a failure.
 
-`run-journey-tests/action.yml` is present, but it still references a template
-repository and Node 22. Treat it as something to review before using as the
-authoritative CI path.
+`run-journey-tests/action.yml` runs directly against the checked-out APHA
+repository with the Node version in `.nvmrc`. Calling workflows must provide the
+same environment variables and secrets required by the selected target
+environment. The report artifact is uploaded even when a journey fails.
 
 ## Debugging Common Failures
 
@@ -477,27 +504,10 @@ PII masking:
   is obvious from the domain.
 - Preserve existing environment tags unless deliberately changing where a
   scenario should run.
-- Do not commit secrets. Use local shell environment, `.envrc` or CI/CD secret
-  injection.
-
-## Current Risks And Recommended Improvements
-
-These are observations from the current repository. They are not prerequisites
-for adding ordinary tests, but they are worth addressing when touching nearby
-code:
-
-- `README.md` previously referenced Node 22 and `.nvmrc`; the active
-  configuration is Node `>=24.1.0` and no `.nvmrc` is present.
-- `run-journey-tests/action.yml` appears to be inherited from a template and
-  does not match the repository's Node version or checkout target.
-- Some legacy response processor files remain. CPH still uses one, while newer
-  tests use direct assertions and focused helpers.
-- `shared-steps.js` keeps module-level fallback state for older steps. New steps
-  should use Cucumber `World` state.
-- There is no formal seeded-data lifecycle, so test reliability depends on
-  lower-environment data stability.
-- PII masking tests can only prove behaviour when the environment clients are
-  correctly configured for masked/unmasked access.
+- Do not commit secrets or secret-manager output. Use an ignored `.envrc`, local
+  shell environment, or CI/CD secret injection. If a secret is committed, rotate
+  it immediately and coordinate any required history cleanup with repository
+  and security owners.
 
 ## Future Change Checklist
 

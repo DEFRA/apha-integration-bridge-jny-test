@@ -1,35 +1,23 @@
-@dev @test @perf-test @prod
+@dev @test @perf-test @ext-test @prod
 Feature: Customers endpoint tests - find customers in batch
 
   Background:
     Given the auth token
 
-  Scenario Outline: 01 Verify that unauthorised response (401) is returned if token is empty
-    Given the user submits "<endpoint>" customers find POST request with ids "<ids>" using invalid token
+  Scenario: 01 Verify that unauthorised response (401) is returned if token is empty
+    Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}" using invalid token
     When the request is processed by the system
-    Then endpoint return unauthorised response code "<statuscode>"
+    Then endpoint return unauthorised response code "401"
 
-    Examples:
-      | endpoint                        | ids                           | statuscode |
-      | {{customersFind.endpoint}}      | {{customersFind.validIds}}    | 401        |
-
-  Scenario Outline: 02 Verify that forbidden response (403) is returned if token is tampered
-    Given the user submits "<endpoint>" customers find POST request with ids "<ids>" using tampered token
+  Scenario: 02 Verify that forbidden response (403) is returned if token is tampered
+    Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}" using tampered token
     When the request is processed by the system
-    Then endpoint return unauthorised response code "<statuscode>"
+    Then endpoint return unauthorised response code "403"
 
-    Examples:
-      | endpoint                        | ids                           | statuscode |
-      | {{customersFind.endpoint}}      | {{customersFind.validIds}}    | 403        |
-
-  Scenario Outline: 03 Verify that a bad request response is returned when the request body is missing
-    Given the user submits "<endpoint>" customers find POST request with no body
+  Scenario: 03 Verify that a bad request response is returned when the request body is missing
+    Given the user submits "{{customersFind.endpoint}}" customers find POST request with no body
     When the request is processed by the system
     Then the customers find API should return a validation error response
-
-    Examples:
-      | endpoint                        |
-      | {{customersFind.endpoint}}      |
 
   Scenario Outline: 04 Verify that a bad request response is returned for an invalid request body
     Given the user submits "<endpoint>" customers find POST request with raw body "<body>"
@@ -63,20 +51,17 @@ Feature: Customers endpoint tests - find customers in batch
       | {{customersFind.endpoint}}      | {{customersFind.validIds}}    | {{customersFind.defaultPage}}   | {{customersFind.invalidPageSize.tooLarge}}    |
       | {{customersFind.endpoint}}      | {{customersFind.validIds}}    | {{customersFind.defaultPage}}   | {{customersFind.invalidPageSize.zero}}        |
 
-  Scenario Outline: 07 Verify successful response when valid customer ids are provided
-    Given the user submits "<endpoint>" customers find POST request with ids "<ids>"
+  Scenario: 07 Verify successful response when valid customer ids are provided
+    Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}"
     When the request is processed by the system
-    Then the customers find API should return matching customers for ids "<ids>"
-
-    Examples:
-      | endpoint                        | ids                           |
-      | {{customersFind.endpoint}}      | {{customersFind.validIds}}    |
+    Then the customers find API should return matching customers for ids "{{customersFind.validIds}}"
 
   Scenario: 08 Verify non-PII authorised client receives masked customer PII
     Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}"
     When the request is processed by the system
     Then the customers find API should return masked PII fields
 
+  @requires-pii-authorised-client
   Scenario: 09 Verify PII-authorised client receives unmasked customer PII
     Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}" using PII-authorised client
     When the request is processed by the system

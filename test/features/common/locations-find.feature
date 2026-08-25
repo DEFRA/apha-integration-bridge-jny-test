@@ -1,4 +1,4 @@
-@dev @test @perf-test @prod
+@dev @test @perf-test @ext-test @prod
 Feature: Locations endpoint tests - find locations in batch
 
   Background:
@@ -71,6 +71,7 @@ Feature: Locations endpoint tests - find locations in batch
     When the request is processed by the system
     Then the locations find API should return masked PII fields
 
+  @requires-pii-authorised-client
   Scenario: 11 Verify PII-authorised client receives unmasked location PII
     Given the user submits "{{locationsFind.endpoint}}" locations find POST request with ids "{{locationsFind.validIds}}" using PII-authorised client
     When the request is processed by the system

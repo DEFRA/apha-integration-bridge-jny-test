@@ -2,6 +2,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const inputPath = path.resolve('allure-results/cucumber-report.json')
 const reportDir = path.resolve('allure-report')
@@ -31,13 +32,12 @@ function readReportJson() {
   return Array.isArray(parsed) ? parsed : []
 }
 
-function deriveScenarioStatus(steps = []) {
+export function deriveScenarioStatus(steps = []) {
   const statuses = steps
     .map((step) => step?.result?.status)
     .filter((status) => typeof status === 'string')
 
   if (statuses.some((status) => status === 'failed')) return 'failed'
-  if (statuses.some((status) => status === 'passed')) return 'passed'
   if (
     statuses.some((status) =>
       ['pending', 'undefined', 'ambiguous', 'skipped'].includes(status)
@@ -45,10 +45,13 @@ function deriveScenarioStatus(steps = []) {
   ) {
     return 'skipped'
   }
+  if (statuses.length > 0 && statuses.every((status) => status === 'passed')) {
+    return 'passed'
+  }
   return 'unknown'
 }
 
-function summarise(features) {
+export function summarise(features) {
   const summary = {
     generatedAt: now,
     totals: {
@@ -364,16 +367,22 @@ function renderHtml(summary) {
 </html>`
 }
 
-const features = readReportJson()
-const summary = summarise(features)
+export function generateReport() {
+  const features = readReportJson()
+  const summary = summarise(features)
 
-fs.rmSync(reportDir, { recursive: true, force: true })
-fs.mkdirSync(reportDir, { recursive: true })
-fs.writeFileSync(
-  path.join(reportDir, 'summary.json'),
-  JSON.stringify(summary, null, 2)
-)
-fs.writeFileSync(reportPath, renderHtml(summary))
+  fs.rmSync(reportDir, { recursive: true, force: true })
+  fs.mkdirSync(reportDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(reportDir, 'summary.json'),
+    JSON.stringify(summary, null, 2)
+  )
+  fs.writeFileSync(reportPath, renderHtml(summary))
 
-// eslint-disable-next-line no-console
-console.log(`[report] generated ${reportPath}`)
+  // eslint-disable-next-line no-console
+  console.log(`[report] generated ${reportPath}`)
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  generateReport()
+}
