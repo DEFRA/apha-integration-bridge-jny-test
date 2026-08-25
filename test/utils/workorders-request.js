@@ -87,7 +87,9 @@ export async function sendWorkordersGetRequest({
   } else if (country !== undefined) {
     query.country = resolveWorkordersArg(country)
   }
-  if (status !== undefined) {
+  if (Array.isArray(status)) {
+    query.status = status.map(resolveWorkordersArg)
+  } else if (status !== undefined) {
     query.status = resolveWorkordersArg(status)
   }
 

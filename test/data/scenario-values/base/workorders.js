@@ -24,7 +24,16 @@ export default {
     england: 'ENGLAND'
   },
   status: {
-    open: 'Open'
+    open: 'Open',
+    new: 'New',
+    invalid: 'Unsupported'
+  },
+  statusFilter: {
+    page: '1',
+    pageSize: '50',
+    discoveryMaxPages: '30',
+    startDate: '1900-01-01T00:00:00.000Z',
+    endDate: '2100-01-01T00:00:00.000Z'
   },
   invalidCountry: {
     unsupported: 'NORTHERN_IRELAND'

@@ -522,9 +522,13 @@ export function assertSelfLinkContainsQuery(res, expected) {
       expected.country ? String(expected.country) : null
     )
   }
-  expect(qs.get('status')).to.equal(
-    expected.status ? String(expected.status) : null
-  )
+  if (Array.isArray(expected.status)) {
+    expect(qs.getAll('status')).to.deep.equal(expected.status.map(String))
+  } else {
+    expect(qs.get('status')).to.equal(
+      expected.status ? String(expected.status) : null
+    )
+  }
 
   expect(res.data.links).to.have.property('next')
   expect(res.data.links).to.have.property('prev')

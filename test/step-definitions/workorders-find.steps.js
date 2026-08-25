@@ -13,7 +13,10 @@ import {
 import {
   assertActivitiesHaveOperationalDetails,
   assertActivitiesHaveStatus,
-  assertActivitiesOrderedBySequenceNumber
+  assertActivitiesOrderedBySequenceNumber,
+  assertDeliveryPartner,
+  assertExternalAllocationIsNull,
+  assertScottishExternalSupplier
 } from '../utils/workorder-activity-assertions.js'
 import {
   assertEarliestActivityStartDateField,
@@ -160,6 +163,40 @@ Then(
   'the workorders find API should return activities ordered by ascending sequence number for all returned workorders',
   function () {
     assertActivitiesOrderedBySequenceNumber(shapedWorkordersFrom(this))
+  }
+)
+
+Then(
+  'activity {string} on workorder {string} should identify a Scottish external supplier',
+  function (activityId, workorderId) {
+    assertScottishExternalSupplier(
+      shapedWorkordersFrom(this),
+      resolveFindValueArg(workorderId),
+      resolveFindValueArg(activityId)
+    )
+  }
+)
+
+Then(
+  'activity {string} on workorder {string} should identify a delivery partner for {string}',
+  function (activityId, workorderId, country) {
+    assertDeliveryPartner(
+      shapedWorkordersFrom(this),
+      resolveFindValueArg(workorderId),
+      resolveFindValueArg(activityId),
+      resolveFindValueArg(country)
+    )
+  }
+)
+
+Then(
+  'activity {string} on workorder {string} should return null external allocation details',
+  function (activityId, workorderId) {
+    assertExternalAllocationIsNull(
+      shapedWorkordersFrom(this),
+      resolveFindValueArg(workorderId),
+      resolveFindValueArg(activityId)
+    )
   }
 )
 
