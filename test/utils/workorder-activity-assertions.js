@@ -8,6 +8,16 @@ function expectStringOrNull(object, key) {
   }
 }
 
+function expectPopulatedStringOrNull(object, key) {
+  expectStringOrNull(object, key)
+  if (object[key] !== null) {
+    expect(
+      object[key].trim().length,
+      `Expected activity ${object.id} ${key} to be null rather than an empty string`
+    ).to.be.greaterThan(0)
+  }
+}
+
 export function assertWorkorderHasStatus(workorder) {
   expectStringOrNull(workorder, 'status')
 }
@@ -18,6 +28,9 @@ export function assertWorkorderActivityShape(activity) {
   expect(activity.id).to.be.a('string')
   expectStringOrNull(activity, 'activityName')
   expectStringOrNull(activity, 'status')
+  expectPopulatedStringOrNull(activity, 'externalReference')
+  expectPopulatedStringOrNull(activity, 'supplierIdentifier')
+  expectPopulatedStringOrNull(activity, 'deliveryPartnerIdentifier')
 
   if (activity.default !== undefined) {
     expect(activity.default).to.be.a('boolean')
@@ -78,6 +91,86 @@ export function assertActivitiesHaveStatus(workorders) {
     validatedActivities,
     'Expected at least one activity so status can be verified'
   ).to.be.greaterThan(0)
+}
+
+function findActivity(workorders, workorderId, activityId) {
+  const workorder = workorders.find((item) => item.id === workorderId)
+  expect(
+    workorder,
+    `Expected workorder ${workorderId} to be returned`
+  ).to.not.equal(undefined)
+
+  const activity = workorder.activities.find((item) => item.id === activityId)
+  expect(
+    activity,
+    `Expected activity ${activityId} to be returned on workorder ${workorderId}`
+  ).to.not.equal(undefined)
+
+  return { workorder, activity }
+}
+
+function expectPopulatedString(activity, key) {
+  expect(
+    activity,
+    `Expected activity ${activity.id} to include ${key}`
+  ).to.have.property(key)
+  expect(
+    activity[key],
+    `Expected activity ${activity.id} ${key} to be a populated string`
+  ).to.be.a('string')
+  expect(activity[key].trim().length).to.be.greaterThan(0)
+}
+
+export function assertScottishExternalSupplier(
+  workorders,
+  workorderId,
+  activityId
+) {
+  const { workorder, activity } = findActivity(
+    workorders,
+    workorderId,
+    activityId
+  )
+
+  expect(workorder.country).to.equal('SCOTLAND')
+  expectPopulatedString(activity, 'externalReference')
+  expectPopulatedString(activity, 'supplierIdentifier')
+  expectStringOrNull(activity, 'deliveryPartnerIdentifier')
+}
+
+export function assertDeliveryPartner(
+  workorders,
+  workorderId,
+  activityId,
+  expectedCountry
+) {
+  const { workorder, activity } = findActivity(
+    workorders,
+    workorderId,
+    activityId
+  )
+
+  expect(['ENGLAND', 'WALES']).to.include(expectedCountry)
+  expect(workorder.country).to.equal(expectedCountry)
+  expectPopulatedString(activity, 'deliveryPartnerIdentifier')
+  expectStringOrNull(activity, 'externalReference')
+  expectStringOrNull(activity, 'supplierIdentifier')
+}
+
+export function assertExternalAllocationIsNull(
+  workorders,
+  workorderId,
+  activityId
+) {
+  const { activity } = findActivity(workorders, workorderId, activityId)
+
+  for (const key of [
+    'externalReference',
+    'supplierIdentifier',
+    'deliveryPartnerIdentifier'
+  ]) {
+    expect(activity).to.have.property(key, null)
+  }
 }
 
 function describeActivitySequence(activities) {

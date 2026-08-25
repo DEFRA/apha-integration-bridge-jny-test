@@ -42,6 +42,30 @@ export default {
       'WS-76655': ['U1006993', 'U1006994'],
       'WS-76657': ['U1006993', 'U1006994'],
       'WS-76724': ['U1007043', 'U1007044']
+    },
+    externalAllocation: {
+      scotlandSupplier: {
+        workorderIds: ['WS-170'],
+        workorderId: 'WS-170',
+        activityId: 'WSA-337'
+      },
+      englandDeliveryPartner: {
+        workorderIds: ['WS-1304'],
+        workorderId: 'WS-1304',
+        activityId: 'WSA-2718',
+        country: 'ENGLAND'
+      },
+      walesDeliveryPartner: {
+        workorderIds: ['WS-3522'],
+        workorderId: 'WS-3522',
+        activityId: 'WSA-7663',
+        country: 'WALES'
+      },
+      unallocated: {
+        workorderIds: ['WS-74581'],
+        workorderId: 'WS-74581',
+        activityId: 'WSA-104691'
+      }
     }
   }
 }

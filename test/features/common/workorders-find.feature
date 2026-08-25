@@ -1,8 +1,10 @@
-@dev @test @perf-test @ext-test @prod
 Feature: Workorders endpoint tests - find workorders in batch
 
   Background:
     Given the auth token
+
+  @dev @test @perf-test @ext-test @prod
+  Rule: Core workorders find behaviour
 
   Scenario: 01 Verify that unauthorised response (401) is returned if token is empty
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}" using invalid token
@@ -74,3 +76,26 @@ Feature: Workorders endpoint tests - find workorders in batch
     Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.validIds}}"
     When the request is processed by the system
     Then the workorders find API should return status field for all returned activities
+
+  @dev @test @ext-test
+  Rule: External allocation details
+
+    Scenario: 14 Verify a Scottish externally allocated activity identifies its supplier
+      Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.externalAllocation.scotlandSupplier.workorderIds}}"
+      When the request is processed by the system
+      Then activity "{{workordersFind.externalAllocation.scotlandSupplier.activityId}}" on workorder "{{workordersFind.externalAllocation.scotlandSupplier.workorderId}}" should identify a Scottish external supplier
+
+    Scenario Outline: 15 Verify an activity in England or Wales identifies its delivery partner
+      Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "<workorderIds>"
+      When the request is processed by the system
+      Then activity "<activityId>" on workorder "<workorderId>" should identify a delivery partner for "<country>"
+
+      Examples:
+        | workorderIds                                                              | workorderId                                                             | activityId                                                             | country                                                         |
+        | {{workordersFind.externalAllocation.englandDeliveryPartner.workorderIds}} | {{workordersFind.externalAllocation.englandDeliveryPartner.workorderId}} | {{workordersFind.externalAllocation.englandDeliveryPartner.activityId}} | {{workordersFind.externalAllocation.englandDeliveryPartner.country}} |
+        | {{workordersFind.externalAllocation.walesDeliveryPartner.workorderIds}}   | {{workordersFind.externalAllocation.walesDeliveryPartner.workorderId}}   | {{workordersFind.externalAllocation.walesDeliveryPartner.activityId}}   | {{workordersFind.externalAllocation.walesDeliveryPartner.country}}   |
+
+    Scenario: 16 Verify an activity without external allocation data returns explicit nulls
+      Given the user submits "{{workordersFind.endpoint}}" workorders find POST request with ids "{{workordersFind.externalAllocation.unallocated.workorderIds}}"
+      When the request is processed by the system
+      Then activity "{{workordersFind.externalAllocation.unallocated.activityId}}" on workorder "{{workordersFind.externalAllocation.unallocated.workorderId}}" should return null external allocation details

@@ -19,6 +19,30 @@ export default {
     invalidBodies: {
       idsNotArray: { ids: 'WS-72034' },
       idsMissing: { workOrderIds: ['WS-72034'] }
+    },
+    externalAllocation: {
+      scotlandSupplier: {
+        workorderIds: ['WS-217811'],
+        workorderId: 'WS-217811',
+        activityId: 'WSA-270199'
+      },
+      englandDeliveryPartner: {
+        workorderIds: ['WS-218731'],
+        workorderId: 'WS-218731',
+        activityId: 'WSA-272122',
+        country: 'ENGLAND'
+      },
+      walesDeliveryPartner: {
+        workorderIds: ['WS-218961'],
+        workorderId: 'WS-218961',
+        activityId: 'WSA-272641',
+        country: 'WALES'
+      },
+      unallocated: {
+        workorderIds: ['WS-15885'],
+        workorderId: 'WS-15885',
+        activityId: 'WSA-12178'
+      }
     }
   },
   workorders: {
