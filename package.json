@@ -41,7 +41,7 @@
     "esm-module-alias": "2.2.1"
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
+    "eslint": "^10.9.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-prettier": "5.5.6",
