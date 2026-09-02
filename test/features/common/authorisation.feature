@@ -9,7 +9,7 @@ Feature: Authorised endpoint authentication
   Scenario Outline: 02 Rejects authentication failures with an unauthorised response
     Given the user submits "{{locationsFind.endpoint}}" authorised locations find POST request with ids "{{locationsFind.validIds}}" using "<authCase>"
     When the request is processed by the system
-    Then the authorised endpoint returns "401" with error message "Unauthorized"
+    Then the API returns HTTPException status "401" code "UNAUTHORIZED" with error code "UNAUTHORIZED"
 
     Examples:
       | authCase                     |
@@ -27,4 +27,15 @@ Feature: Authorised endpoint authentication
     Given the user submits "{{locationsFind.endpoint}}" locations find POST request with raw body "{"
     When the request is processed by the system
     Then the API response status should be "400"
+    And the API returns HTTPException status "400" code "BAD_REQUEST" with error code "VALIDATION_ERROR"
     And the API response should include security headers
+
+  Scenario: 05 Normalises application validation errors into the HTTPException response
+    Given the user submits "{{locationsFind.endpoint}}" locations find POST request with raw body "{}"
+    When the request is processed by the system
+    Then the API returns HTTPException status "400" code "BAD_REQUEST" with error code "VALIDATION_ERROR"
+
+  Scenario: 06 Normalises gateway forbidden errors into the HTTPException response
+    Given the user requests an unmatched gateway route without authentication
+    When the request is processed by the system
+    Then the API returns HTTPException status "403" code "FORBIDDEN" with error code "MISSING_AUTHENTICATION_TOKEN"

@@ -3,7 +3,10 @@ import { expect } from 'chai'
 
 import { cfg } from '../../config/properties.js'
 import { resolveScenarioString } from '../utils/scenario-data.js'
-import { assertBadRequestResponse } from '../utils/response-assertions.js'
+import {
+  assertBadRequestResponse,
+  assertHttpExceptionResponse
+} from '../utils/response-assertions.js'
 
 import {
   token,
@@ -62,27 +65,28 @@ Then(
       )
     }
 
-    const actualResponse = res.data
+    const expectedStatus = Number(expectedStatusCode.replace(/['"]+/g, ''))
+    const expectedEnvelope = {
+      401: {
+        expectedCode: 'UNAUTHORIZED',
+        expectedFirstErrorCode: 'UNAUTHORIZED'
+      },
+      403: {
+        expectedCode: 'FORBIDDEN',
+        expectedFirstErrorCode: 'ACCESS_DENIED'
+      }
+    }[expectedStatus]
 
-    expect(res.status.toString()).to.equal(
-      expectedStatusCode.replace(/['"]+/g, '')
-    )
-
-    let verificationStatus = false
-
-    if (res.status === 401) {
-      expect(actualResponse.message).to.equal(holdingsendpointKeys.UNAUTHORISED)
-      verificationStatus = true
-    }
-
-    if (res.status === 403) {
-      expect(actualResponse.Message).to.equal(
-        holdingsendpointKeys.ACCESS_DENIED
+    if (!expectedEnvelope) {
+      throw new Error(
+        `Unsupported authentication response status "${expectedStatus}"`
       )
-      verificationStatus = true
     }
 
-    expect(verificationStatus).to.equal(true)
+    assertHttpExceptionResponse(res, {
+      expectedStatus,
+      ...expectedEnvelope
+    })
   }
 )
 

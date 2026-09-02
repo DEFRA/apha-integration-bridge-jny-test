@@ -3,6 +3,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 
 import { cfg, makeUri } from '../../config/properties.js'
+import { assertHttpExceptionResponse } from '../utils/response-assertions.js'
 import {
   resolveScenarioString,
   resolveScenarioValue
@@ -48,11 +49,6 @@ function cognitoShapedJwtThatIsNotSignedByCognito() {
   }
 
   return `${encodeJwtPart(header)}.${encodeJwtPart(payload)}.invalid-signature`
-}
-
-function errorMessageFrom(data) {
-  if (typeof data === 'string') return data
-  return data?.message ?? data?.Message ?? data?.error ?? data?.errorMessage
 }
 
 function expectHeader(headers, name, expectedValue) {
@@ -121,20 +117,31 @@ Given(
   }
 )
 
-Then(
-  'the authorised endpoint returns {string} with error message {string}',
-  async function (statusCode, message) {
-    const res = this.response
+Given(
+  'the user requests an unmatched gateway route without authentication',
+  async function () {
+    const uri = makeUri(baseUrl)
 
-    if (!res) throw new Error('No response captured at all (unexpected).')
-    if (res.status === 0) {
-      throw new Error(
-        `Expected ${statusCode} but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
-      )
+    try {
+      this.response = await axios.get(uri, {
+        headers: { Accept: 'application/json' }
+      })
+    } catch (error) {
+      this.response = toResponseLike(error, uri)
     }
 
-    expect(res.status.toString()).to.equal(statusCode)
-    expect(errorMessageFrom(res.data)).to.equal(message)
+    this.endpoint = '/'
+  }
+)
+
+Then(
+  'the API returns HTTPException status {string} code {string} with error code {string}',
+  async function (statusCode, code, errorCode) {
+    assertHttpExceptionResponse(this.response, {
+      expectedStatus: Number(statusCode),
+      expectedCode: code,
+      expectedFirstErrorCode: errorCode
+    })
   }
 )
 
