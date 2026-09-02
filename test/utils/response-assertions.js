@@ -14,6 +14,38 @@ export function assertOkResponse(res) {
   expect(res.status).to.equal(responseCodes.ok)
 }
 
+export function assertHttpExceptionResponse(
+  res,
+  { expectedStatus, expectedCode, expectedFirstErrorCode } = {}
+) {
+  if (!res) throw new Error('No response captured at all (unexpected).')
+
+  if (res.status === 0) {
+    throw new Error(
+      `Expected ${expectedStatus} but got NETWORK_ERROR (0). URI=${res.data?.uri} :: ${res.data?.message}`
+    )
+  }
+
+  expect(res.status).to.equal(expectedStatus)
+  expect(res.headers?.['content-type']).to.match(/^application\/json\b/i)
+  expect(res.data).to.be.an('object')
+  expect(res.data).to.include.all.keys('message', 'code', 'errors')
+  expect(res.data).not.to.have.any.keys('statusCode', 'error', 'Message')
+  expect(res.data.message).to.be.a('string')
+  expect(res.data.message.trim().length).to.be.greaterThan(0)
+  expect(res.data.code).to.equal(expectedCode)
+  expect(res.data.errors).to.be.an('array')
+
+  if (expectedFirstErrorCode !== undefined) {
+    expect(res.data.errors.length).to.be.greaterThan(0)
+    expect(res.data.errors[0]).to.include({ code: expectedFirstErrorCode })
+    expect(res.data.errors[0].message).to.be.a('string')
+    expect(res.data.errors[0].message.trim().length).to.be.greaterThan(0)
+  }
+
+  return res.data
+}
+
 export function assertOkResponseWithDataArray(
   res,
   { requireNonEmpty = true, nonEmptyMessage = 'Expected response data' } = {}
