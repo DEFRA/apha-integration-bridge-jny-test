@@ -383,8 +383,14 @@ Exclude specific features:
 CUCUMBER_EXCLUDE_FEATURES="test/features/common/case.feature" node ./bin/run-cucumber.mjs --env=dev
 ```
 
-`case.feature` and `users-find-by-email.feature` are excluded by default because
-their backing routes are not consistently available. Include them with:
+`case-create.feature` runs by default in non-production environments and uses a
+unique application reference for each Salesforce case it creates. It is not
+tagged for production.
+
+`case.feature` contains the optional case PII response journeys, and
+`users-find-by-email.feature` is also optional. They are excluded by default
+because their required response/authentication behaviour is not consistently
+available. Include them with:
 
 ```bash
 CASE_MANAGEMENT_ENABLED=true node ./bin/run-cucumber.mjs --env=dev
