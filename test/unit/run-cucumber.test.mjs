@@ -57,12 +57,16 @@ test('tags default to the selected environment and preserve expressions', () => 
   assert.equal(normaliseTags('@dev and not @wip', 'dev'), '@dev and not @wip')
 })
 
-test('case-management features are excluded unless explicitly enabled', () => {
+test('stable case creation runs by default while optional case-management features require explicit enabling', () => {
   const defaults = resolveFeatureTargets('dev', [], {})
   const enabled = resolveFeatureTargets('dev', [], {
     CASE_MANAGEMENT_ENABLED: 'true'
   })
 
+  assert.equal(
+    defaults.includes('test/features/common/case-create.feature'),
+    true
+  )
   assert.equal(defaults.includes('test/features/common/case.feature'), false)
   assert.equal(
     defaults.includes('test/features/common/users-find-by-email.feature'),
