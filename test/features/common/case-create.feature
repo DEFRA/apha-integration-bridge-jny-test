@@ -1,4 +1,4 @@
-@dev @test @perf-test @ext-test
+@dev
 Feature: Salesforce case creation
 
   Background:
