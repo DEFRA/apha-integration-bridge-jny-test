@@ -13,3 +13,4 @@ allure-results/
 FAILED
 .envrc
 output.txt
+.local/qa_notes.md
