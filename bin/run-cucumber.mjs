@@ -76,7 +76,7 @@ export function normaliseTags(rawTags, envName) {
   else tags = `@${raw}`
 
   return envName === 'ext-test'
-    ? `(${tags}) and not (@requires-pii-authorised-client or @requires-stable-environment-data)`
+    ? `(${tags}) and not (@requires-pii-authorised-client or @requires-non-pii-authorised-client or @requires-stable-environment-data)`
     : tags
 }
 

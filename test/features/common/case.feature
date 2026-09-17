@@ -4,6 +4,7 @@ Feature: Case PII response tests
   Background:
     Given the auth token
 
+  @requires-non-pii-authorised-client
   Scenario: 03 Verify non-PII authorised client receives masked case PII
     Given the user submits a case create request with valid body
     When the request is processed by the system

@@ -66,6 +66,7 @@ Feature: Locations endpoint tests - find locations in batch
     When the request is processed by the system
     Then the locations find API should return matching locations for ids "{{locationsFind.idsWithMissing}}" excluding missing id "{{locationsFind.missingId}}"
 
+  @requires-non-pii-authorised-client
   Scenario: 10 Verify non-PII authorised client receives masked location PII
     Given the user submits "{{locationsFind.endpoint}}" locations find POST request with ids "{{locationsFind.validIds}}"
     When the request is processed by the system
