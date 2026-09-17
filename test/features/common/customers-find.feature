@@ -56,6 +56,7 @@ Feature: Customers endpoint tests - find customers in batch
     When the request is processed by the system
     Then the customers find API should return matching customers for ids "{{customersFind.validIds}}"
 
+  @requires-non-pii-authorised-client
   Scenario: 08 Verify non-PII authorised client receives masked customer PII
     Given the user submits "{{customersFind.endpoint}}" customers find POST request with ids "{{customersFind.validIds}}"
     When the request is processed by the system

@@ -35,6 +35,7 @@ Feature: Organisations endpoint tests - find organisations in batch
     When the request is processed by the system
     Then the organisations find API should return matching organisations for ids "{{organisationsFind.validIds}}"
 
+  @requires-non-pii-authorised-client
   Scenario: 06 Verify non-PII authorised client receives masked organisation PII
     Given the user submits "{{organisationsFind.endpoint}}" organisations find POST request with ids "{{organisationsFind.validIds}}"
     When the request is processed by the system

@@ -19,6 +19,7 @@ Feature: (AIL-282) Locations endpoint tests
     When the request is processed by the system
     Then the API should return the location details
 
+  @requires-non-pii-authorised-client
   Scenario: 04 Verify non-PII authorised client receives masked location details
     Given the user submits "{{locations.endpoint}}" "{{locations.validId}}" request
     When the request is processed by the system

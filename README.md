@@ -289,11 +289,14 @@ Expected environment-specific secret variables:
 Ext-test uses the client ID configured in `config/env/ext-test.js`. Its Cognito
 token environment is `8ec5c`, and its API base URL is
 `https://apha-integration-bridge.api.ext-test.cdp-int.defra.cloud`.
-PII-authorised scenarios are excluded from ext-test until a separate
-PII-authorised Cognito client is available there. Scenarios tagged
-`@requires-stable-environment-data` are also excluded because ext-test is used
-as a smoke target and its records are less stable than the main test
-environments.
+The ext-test default client has the `pii` scope, so it returns unmasked PII.
+Masked-PII scenarios tagged `@requires-non-pii-authorised-client` are excluded
+until a separate non-PII client is configured. Scenarios tagged
+`@requires-pii-authorised-client` are also excluded because they require a
+separate PII-authorised client credential, which is not configured for ext-test.
+Scenarios tagged `@requires-stable-environment-data` are excluded because
+ext-test is used as a smoke target and its records are less stable than the
+main test environments.
 
 PII-authorised client overrides used by unmasked PII journeys:
 

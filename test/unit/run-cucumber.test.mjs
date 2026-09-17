@@ -43,11 +43,11 @@ test('ext-test is a supported environment', () => {
   assert.equal(pickEnvironment('ext-test', {}), 'ext-test')
   assert.equal(
     normaliseTags('', 'ext-test'),
-    '(@ext-test) and not (@requires-pii-authorised-client or @requires-stable-environment-data)'
+    '(@ext-test) and not (@requires-pii-authorised-client or @requires-non-pii-authorised-client or @requires-stable-environment-data)'
   )
   assert.equal(
     normaliseTags('@ext-test and @smoke', 'ext-test'),
-    '(@ext-test and @smoke) and not (@requires-pii-authorised-client or @requires-stable-environment-data)'
+    '(@ext-test and @smoke) and not (@requires-pii-authorised-client or @requires-non-pii-authorised-client or @requires-stable-environment-data)'
   )
 })
 
