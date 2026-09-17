@@ -13,3 +13,8 @@ Feature: Salesforce case creation
     Given the user submits a case create request missing application reference
     When the request is processed by the system
     Then the case API should return bad request with message "{{caseCreate.missingApplicationReferenceMessage}}"
+
+  Scenario: 03 Verify that a Key Fact creation failure returns an error
+    Given the user submits a case create request with an overlength Key Fact
+    When the request is processed by the system
+    Then the case API should report the Key Fact creation failure

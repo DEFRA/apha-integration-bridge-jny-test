@@ -57,7 +57,8 @@ function getCaseResponsePayload(res) {
 async function sendCaseCreateRequest({
   world,
   includeApplicationReference = true,
-  usePiiAuthorisedClient = false
+  usePiiAuthorisedClient = false,
+  overlengthKeyFact = false
 }) {
   tokenGen = usePiiAuthorisedClient
     ? await tokenForPiiAuthorisedClient(world)
@@ -71,6 +72,10 @@ async function sendCaseCreateRequest({
     payload.applicationReferenceNumber = makeApplicationReferenceNumber()
   } else {
     delete payload.applicationReferenceNumber
+  }
+  if (overlengthKeyFact) {
+    payload.keyFacts.additionalInformation.value = 'x'.repeat(256)
+    delete payload.keyFacts.biosecurityMaps
   }
 
   let res
@@ -112,6 +117,14 @@ Given(
 )
 
 Given(
+  'the user submits a case create request with an overlength Key Fact',
+  { timeout: 30 * 1000 },
+  async function () {
+    await sendCaseCreateRequest({ world: this, overlengthKeyFact: true })
+  }
+)
+
+Given(
   'the user submits a case create request with valid body using PII-authorised client',
   { timeout: 30 * 1000 },
   async function () {
@@ -141,6 +154,17 @@ Then('the case API should return created response', async function () {
       `Response=${serialiseForError(res.data)} ` +
       `Request=${serialiseForError(this.requestPayload)}`
   ).to.equal(created)
+})
+
+Then('the case API should report the Key Fact creation failure', function () {
+  const res = this.response
+
+  expect(res?.status, serialiseForError(res?.data)).to.equal(500)
+  expect(res.data.code).to.equal('INTERNAL_SERVER_ERROR')
+  expect(res.data.errors).to.deep.include({
+    code: 'INTERNAL_SERVER_ERROR',
+    message: 'Could not create case on the case management service'
+  })
 })
 
 Then(
