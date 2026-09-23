@@ -1,5 +1,8 @@
 import holdings from './holdings.js'
 
+const biosecurityMapPath =
+  '/biosecurity-map/9a4739ec-7e85-420d-a626-e12b8dbb6029/968144fc-870b-49aa-9c21-582a419f067a'
+
 export default {
   endpoint: 'case-management/case',
   validPayload: {
@@ -26,6 +29,24 @@ export default {
         sectionKey: 'licence',
         title: 'Receiving the licence',
         questionAnswers: []
+      },
+      {
+        sectionKey: 'biosecurity-map',
+        title: 'Biosecurity map',
+        questionAnswers: [
+          {
+            question: 'Upload a biosecurity map',
+            questionKey: 'upload-plan',
+            answer: {
+              type: 'file',
+              value: {
+                path: biosecurityMapPath,
+                skipped: false
+              },
+              displayText: 'Map uploaded'
+            }
+          }
+        ]
       }
     ],
     keyFacts: {
@@ -87,9 +108,7 @@ export default {
       },
       biosecurityMaps: {
         type: 'file',
-        value: [
-          'biosecurity-map/5c14efbd-5b21-4248-b313-d0fff438be1c/d3460891-46ae-4abe-9e5f-d5f19d9f59a7'
-        ]
+        value: [biosecurityMapPath]
       }
     }
   },
