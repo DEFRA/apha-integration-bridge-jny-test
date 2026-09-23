@@ -88,7 +88,7 @@ export default {
       biosecurityMaps: {
         type: 'file',
         value: [
-          'biosecurity-map/7d685ee0-0205-4372-8b01-33e67805cebb/002e5d49-e957-445f-82c0-2439629c1fec'
+          'biosecurity-map/5c14efbd-5b21-4248-b313-d0fff438be1c/d3460891-46ae-4abe-9e5f-d5f19d9f59a7'
         ]
       }
     }
