@@ -29,24 +29,6 @@ export default {
         sectionKey: 'licence',
         title: 'Receiving the licence',
         questionAnswers: []
-      },
-      {
-        sectionKey: 'biosecurity-map',
-        title: 'Biosecurity map',
-        questionAnswers: [
-          {
-            question: 'Upload a biosecurity map',
-            questionKey: 'upload-plan',
-            answer: {
-              type: 'file',
-              value: {
-                path: biosecurityMapPath,
-                skipped: false
-              },
-              displayText: 'Map uploaded'
-            }
-          }
-        ]
       }
     ],
     keyFacts: {
