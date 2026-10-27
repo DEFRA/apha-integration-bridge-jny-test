@@ -4,21 +4,20 @@ import {
   assertOkResponse,
   assertOkResponseWithDataArray
 } from './response-assertions.js'
+import { assertSelfLink, parseQueryString } from './find-response-assertions.js'
 import {
   assertWorkorderActivityShape,
   assertWorkorderHasStatus
 } from './workorder-activity-assertions.js'
+import { expectStringOrNullProperty } from './property-assertions.js'
+import {
+  assertRelationshipArrayData,
+  assertRelationshipObjectData
+} from './relationship-assertions.js'
 
 export const supportedCountries = ['SCOTLAND', 'WALES', 'ENGLAND']
 
-export const normalisePath = (p) => (p || '').replace(/^\/+/, '')
-
-export function parseQueryString(urlOrPath) {
-  const str = String(urlOrPath || '')
-  const idx = str.indexOf('?')
-  const qs = idx >= 0 ? str.slice(idx + 1) : str.replace(/^\?/, '')
-  return new URLSearchParams(qs)
-}
+export { normalisePath, parseQueryString } from './find-response-assertions.js'
 
 export function normaliseCountry(country) {
   return String(country || '')
@@ -32,16 +31,6 @@ export function parseIsoTimestamp(value, label = 'ISO date') {
   expect(Number.isNaN(timestamp), `Invalid ${label}: ${value}`).to.equal(false)
 
   return timestamp
-}
-
-function expectStringOrNull(object, key, { allowUndefined = false } = {}) {
-  if (allowUndefined && object[key] === undefined) return
-
-  expect(object).to.have.property(key)
-  const value = object[key]
-  if (value !== null) {
-    expect(value).to.be.a('string')
-  }
 }
 
 function isSameUtcDay(leftTimestamp, rightTimestamp) {
@@ -224,7 +213,7 @@ export function assertWorkorderShape(
     'species',
     'phase'
   ]) {
-    expectStringOrNull(workorder, key)
+    expectStringOrNullProperty(workorder, key)
   }
 
   assertWorkorderHasStatus(workorder)
@@ -260,75 +249,6 @@ export function assertWorkorderShape(
     'animal-commodities',
     { allowNullRelationshipData }
   )
-}
-
-function assertRelationshipObjectData(
-  relationships,
-  relationshipName,
-  typeIfPresent,
-  { allowNullRelationshipData = false } = {}
-) {
-  if (relationships[relationshipName] === undefined) {
-    expect(
-      allowNullRelationshipData,
-      `Expected relationship ${relationshipName} to be present`
-    ).to.equal(true)
-    return
-  }
-
-  expect(relationships[relationshipName]).to.have.property('data')
-
-  const relationshipData = relationships[relationshipName].data
-  if (relationshipData === null || relationshipData === undefined) {
-    expect(
-      allowNullRelationshipData,
-      `Expected relationship ${relationshipName} data to be present`
-    ).to.equal(true)
-    return
-  }
-
-  expect(relationshipData).to.be.an('object')
-  if (typeIfPresent) {
-    expect(relationshipData).to.have.property('type', typeIfPresent)
-  } else {
-    expect(relationshipData).to.have.property('type')
-    expect(relationshipData.type).to.be.a('string')
-  }
-  expect(relationshipData).to.have.property('id')
-  expect(relationshipData.id).to.be.a('string')
-}
-
-function assertRelationshipArrayData(
-  relationships,
-  relationshipName,
-  itemType,
-  { allowNullRelationshipData = false } = {}
-) {
-  if (relationships[relationshipName] === undefined) {
-    expect(
-      allowNullRelationshipData,
-      `Expected relationship ${relationshipName} to be present`
-    ).to.equal(true)
-    return
-  }
-
-  expect(relationships[relationshipName]).to.have.property('data')
-
-  const relationshipData = relationships[relationshipName].data
-  if (relationshipData === null || relationshipData === undefined) {
-    expect(
-      allowNullRelationshipData,
-      `Expected relationship ${relationshipName} data to be present`
-    ).to.equal(true)
-    return
-  }
-
-  expect(relationshipData).to.be.an('array')
-  for (const item of relationshipData) {
-    expect(item).to.have.property('type', itemType)
-    expect(item).to.have.property('id')
-    expect(item.id).to.be.a('string')
-  }
 }
 
 export function getWorkorderLivestockUnitIds(workorder) {
@@ -452,7 +372,7 @@ export function assertWorkordersResponseForAllCountries({
   for (const workorder of workorders) {
     expect(workorder).to.have.property('id')
     expect(workorder.id).to.be.a('string')
-    expectStringOrNull(workorder, 'country')
+    expectStringOrNullProperty(workorder, 'country')
     const country = normaliseCountry(workorder.country)
     expect(
       supportedCountries,
@@ -499,11 +419,9 @@ export function assertSelfLinkContainsQuery(res, expected) {
   assertOkResponse(res)
 
   expect(res.data).to.have.property('links')
-  expect(res.data.links).to.have.property('self')
+  assertSelfLink(res.data.links, 'workorders')
 
   const selfLink = res.data.links.self
-  expect(selfLink).to.be.a('string')
-  expect(normalisePath(selfLink.split('?')[0])).to.equal('workorders')
 
   const qs = parseQueryString(selfLink)
   expect(qs.get('page')).to.equal(String(expected.page))

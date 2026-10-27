@@ -1,15 +1,9 @@
 import { expect } from 'chai'
 
-function expectStringOrNull(object, key) {
-  expect(object).to.have.property(key)
-  const value = object[key]
-  if (value !== null) {
-    expect(value).to.be.a('string')
-  }
-}
+import { expectStringOrNullProperty } from './property-assertions.js'
 
 function expectPopulatedStringOrNull(object, key) {
-  expectStringOrNull(object, key)
+  expectStringOrNullProperty(object, key)
   if (object[key] !== null) {
     expect(
       object[key].trim().length,
@@ -19,15 +13,15 @@ function expectPopulatedStringOrNull(object, key) {
 }
 
 export function assertWorkorderHasStatus(workorder) {
-  expectStringOrNull(workorder, 'status')
+  expectStringOrNullProperty(workorder, 'status')
 }
 
 export function assertWorkorderActivityShape(activity) {
   expect(activity).to.have.property('type', 'activities')
   expect(activity).to.have.property('id')
   expect(activity.id).to.be.a('string')
-  expectStringOrNull(activity, 'activityName')
-  expectStringOrNull(activity, 'status')
+  expectStringOrNullProperty(activity, 'activityName')
+  expectStringOrNullProperty(activity, 'status')
   expectPopulatedStringOrNull(activity, 'externalReference')
   expectPopulatedStringOrNull(activity, 'supplierIdentifier')
   expectPopulatedStringOrNull(activity, 'deliveryPartnerIdentifier')
@@ -52,7 +46,7 @@ export function assertWorkorderActivityShape(activity) {
     `Expected activity ${activity.id} to include a non-empty workbasket`
   )
 
-  expectStringOrNull(activity, 'assignedTo')
+  expectStringOrNullProperty(activity, 'assignedTo')
 }
 
 export function assertActivitiesHaveOperationalDetails(workorders) {
@@ -82,7 +76,7 @@ export function assertActivitiesHaveStatus(workorders) {
     expect(workorder.activities).to.be.an('array')
 
     for (const activity of workorder.activities) {
-      expectStringOrNull(activity, 'status')
+      expectStringOrNullProperty(activity, 'status')
       validatedActivities += 1
     }
   }
@@ -135,7 +129,7 @@ export function assertScottishExternalSupplier(
   expect(workorder.country).to.equal('SCOTLAND')
   expectPopulatedString(activity, 'externalReference')
   expectPopulatedString(activity, 'supplierIdentifier')
-  expectStringOrNull(activity, 'deliveryPartnerIdentifier')
+  expectStringOrNullProperty(activity, 'deliveryPartnerIdentifier')
 }
 
 export function assertDeliveryPartner(
@@ -153,8 +147,8 @@ export function assertDeliveryPartner(
   expect(['ENGLAND', 'WALES']).to.include(expectedCountry)
   expect(workorder.country).to.equal(expectedCountry)
   expectPopulatedString(activity, 'deliveryPartnerIdentifier')
-  expectStringOrNull(activity, 'externalReference')
-  expectStringOrNull(activity, 'supplierIdentifier')
+  expectStringOrNullProperty(activity, 'externalReference')
+  expectStringOrNullProperty(activity, 'supplierIdentifier')
 }
 
 export function assertExternalAllocationIsNull(

@@ -4,22 +4,12 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from './address-assertions.js'
+import {
+  expectNumberOrNullProperty,
+  expectStringOrNullProperty
+} from './property-assertions.js'
 import { assertOkResponseWithDataArray } from './response-assertions.js'
 import { assertFindLinks } from './find-response-assertions.js'
-
-function expectStringOrNull(object, key) {
-  expect(object).to.have.property(key)
-  if (object[key] !== null) {
-    expect(object[key]).to.be.a('string')
-  }
-}
-
-function expectNumberOrNull(object, key) {
-  expect(object).to.have.property(key)
-  if (object[key] !== null) {
-    expect(object[key]).to.be.a('number')
-  }
-}
 
 function expectOneOfOrNull(value, types, fieldName) {
   if (value === null) return
@@ -59,8 +49,8 @@ export function assertLocationShape(location) {
   expect(location).to.have.property('id')
   expect(location.id).to.be.a('string')
 
-  expectStringOrNull(location, 'name')
-  expectStringOrNull(location, 'osMapReference')
+  expectStringOrNullProperty(location, 'name')
+  expectStringOrNullProperty(location, 'osMapReference')
 
   expect(location).to.have.property('address')
   expect(location.address).to.be.an('object')
@@ -76,10 +66,10 @@ export function assertLocationShape(location) {
     'address.secondaryAddressableObject'
   )
 
-  expectStringOrNull(location.address, 'street')
-  expectStringOrNull(location.address, 'locality')
-  expectStringOrNull(location.address, 'town')
-  expectStringOrNull(location.address, 'postcode')
+  expectStringOrNullProperty(location.address, 'street')
+  expectStringOrNullProperty(location.address, 'locality')
+  expectStringOrNullProperty(location.address, 'town')
+  expectStringOrNullProperty(location.address, 'postcode')
   expectCountyDescriptiveNameOrNull(location.address, 'county', {
     allowMasked: true
   })
@@ -92,8 +82,8 @@ export function assertLocationShape(location) {
     expect(livestockUnit).to.have.property('type', 'animal-commodities')
     expect(livestockUnit).to.have.property('id')
     expect(livestockUnit.id).to.be.a('string')
-    expectNumberOrNull(livestockUnit, 'animalQuantities')
-    expectStringOrNull(livestockUnit, 'species')
+    expectNumberOrNullProperty(livestockUnit, 'animalQuantities')
+    expectStringOrNullProperty(livestockUnit, 'species')
   }
 
   expect(location).to.have.property('facilities')
@@ -103,9 +93,9 @@ export function assertLocationShape(location) {
     expect(facility).to.have.property('type', 'facilities')
     expect(facility).to.have.property('id')
     expect(facility.id).to.be.a('string')
-    expectStringOrNull(facility, 'name')
-    expectStringOrNull(facility, 'facilityType')
-    expectStringOrNull(facility, 'businessActivity')
+    expectStringOrNullProperty(facility, 'name')
+    expectStringOrNullProperty(facility, 'facilityType')
+    expectStringOrNullProperty(facility, 'businessActivity')
   }
 
   expect(location).to.have.property('relationships')
