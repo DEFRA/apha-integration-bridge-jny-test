@@ -4,6 +4,7 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from './address-assertions.js'
+import { expectStringOrNullProperty } from './property-assertions.js'
 
 export function assertCustomerShape(customer, submittedIds) {
   expect(customer).to.have.property('type', 'customers')
@@ -19,10 +20,7 @@ export function assertCustomerShape(customer, submittedIds) {
   expect(customer.relationships).to.be.an('object')
 
   for (const key of ['title', 'firstName', 'middleName', 'lastName']) {
-    expect(customer).to.have.property(key)
-    if (customer[key] !== null) {
-      expect(customer[key]).to.be.a('string')
-    }
+    expectStringOrNullProperty(customer, key)
   }
 
   for (const address of customer.addresses) {

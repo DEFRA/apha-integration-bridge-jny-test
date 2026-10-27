@@ -12,13 +12,18 @@ export function parseQueryString(urlOrPath) {
 
 export function assertFindLinks(links, expectedPath) {
   expect(links).to.be.an('object')
-  expect(links).to.have.property('self')
   expect(links).to.have.property('prev')
   expect(links).to.have.property('next')
 
-  assertLinkPath(links.self, 'self', expectedPath, true)
+  assertSelfLink(links, expectedPath)
   assertLinkPath(links.prev, 'prev', expectedPath, false)
   assertLinkPath(links.next, 'next', expectedPath, false)
+}
+
+export function assertSelfLink(links, expectedPath) {
+  expect(links).to.be.an('object')
+  expect(links).to.have.property('self')
+  assertLinkPath(links.self, 'self', expectedPath, true)
 }
 
 function assertLinkPath(linkValue, fieldName, expectedPath, required) {

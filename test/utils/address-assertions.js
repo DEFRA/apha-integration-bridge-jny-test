@@ -1,23 +1,12 @@
 import { expect } from 'chai'
 
+export {
+  expectPopulatedStringProperty,
+  expectStringOrNullProperty
+} from './property-assertions.js'
+
 export const supportedInternalCountries = ['SCOTLAND', 'WALES', 'ENGLAND']
 const maskedValuePattern = /^[*#]+$/
-
-export function expectPopulatedStringProperty(object, key) {
-  expect(object).to.have.property(key)
-  expect(object[key]).to.be.a('string')
-  expect(object[key].trim(), `${key} should be populated`).to.not.equal('')
-}
-
-export function expectStringOrNullProperty(object, key) {
-  expect(object).to.have.property(key)
-
-  if (object[key] === null) {
-    return
-  }
-
-  expect(object[key]).to.be.a('string')
-}
 
 export function expectCountyDescriptiveNameOrNull(
   object,

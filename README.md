@@ -180,6 +180,14 @@ Use existing helpers where they fit:
   parsing.
 - `test/utils/workorders-request.js` for GET `/workorders` request
   construction.
+- `test/utils/holdings-request.js` for versioned holding relationship GET
+  requests.
+- `test/utils/holdings-assertions.js` for holdings find, locations, suppliers
+  and parties response contracts.
+- `test/utils/property-assertions.js` for reusable nullable and populated
+  primitive property checks.
+- `test/utils/relationship-assertions.js` for JSON:API object and array
+  relationship linkage checks.
 - `test/utils/workorders-assertions.js` for Work Orders response contracts.
 - `test/utils/locations-find-assertions.js` and
   `test/utils/customers-find-assertions.js` for endpoint-specific response

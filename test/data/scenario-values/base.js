@@ -1,4 +1,6 @@
 import holdings from './base/holdings.js'
+import holdingsFind from './base/holdings-find.js'
+import holdingsRelated from './base/holdings-related.js'
 import locations from './base/locations.js'
 import locationsFind from './base/locations-find.js'
 import workorders from './base/workorders.js'
@@ -11,6 +13,8 @@ import workordersActivity from './base/workorders-activity.js'
 
 export default {
   holdings,
+  holdingsFind,
+  holdingsRelated,
   locations,
   locationsFind,
   workorders,
