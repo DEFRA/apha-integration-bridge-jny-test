@@ -5,7 +5,17 @@ export {
   expectStringOrNullProperty
 } from './property-assertions.js'
 
-export const supportedInternalCountries = ['SCOTLAND', 'WALES', 'ENGLAND']
+/**
+ * Every UK_INTERNAL_CODE value MIDAS found in production (DSFAAP-2986).
+ * `countryCode` carries this value on the find endpoints, never COUNTRY_CODE.
+ */
+export const supportedInternalCountries = [
+  'ENGLAND',
+  'SCOTLAND',
+  'WALES',
+  'NORTHERN IRELAND',
+  'ISLE OF MAN'
+]
 const maskedValuePattern = /^[*#]+$/
 
 export function expectCountyDescriptiveNameOrNull(
