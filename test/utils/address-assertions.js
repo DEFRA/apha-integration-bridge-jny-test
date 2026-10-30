@@ -5,7 +5,13 @@ export {
   expectStringOrNullProperty
 } from './property-assertions.js'
 
-export const supportedInternalCountries = ['SCOTLAND', 'WALES', 'ENGLAND']
+export const supportedInternalCountries = [
+  'ENGLAND',
+  'SCOTLAND',
+  'WALES',
+  'NORTHERN IRELAND',
+  'ISLE OF MAN'
+]
 const maskedValuePattern = /^[*#]+$/
 
 export function expectCountyDescriptiveNameOrNull(
