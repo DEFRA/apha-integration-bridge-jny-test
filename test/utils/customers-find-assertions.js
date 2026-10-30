@@ -32,8 +32,6 @@ export function assertCustomerShape(customer, submittedIds) {
     expect(contactDetail.isPreferred).to.be.a('boolean')
     expect(contactDetail).to.have.property('type')
     expect(contactDetail.type).to.be.a('string')
-    // SAM's ADDRESS_USAGE_TYPE, so a secondary contact's number can be told
-    // apart from the customer's own (DSFAAP-2986)
     expectStringOrNullProperty(contactDetail, 'usageType')
   }
 }

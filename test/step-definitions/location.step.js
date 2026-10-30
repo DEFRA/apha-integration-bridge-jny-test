@@ -7,10 +7,6 @@ import {
   assertStringFieldsUnmasked
 } from '../utils/pii-masking-assertions.js'
 
-/**
- * Every free-text address field, masked without the pii scope. Locality and
- * county were added by DSFAAP-2986 to match the find endpoints.
- */
 const locationAddressPiiFields = [
   'street',
   'locality',
@@ -24,8 +20,6 @@ Then(/^the API should return the location details$/, async function () {
 
   assertOkResponse(res)
 
-  // the county is decoded through SAM's COUNTY reference data, as
-  // POST /locations/find returns it, not the raw ADMINISTRATIVE_AREA code
   expectCountyDescriptiveNameOrNull(
     res.data.data.address,
     'administrativeAreaCounty',
