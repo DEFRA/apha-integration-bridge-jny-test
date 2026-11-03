@@ -32,6 +32,7 @@ export function assertCustomerShape(customer, submittedIds) {
     expect(contactDetail.isPreferred).to.be.a('boolean')
     expect(contactDetail).to.have.property('type')
     expect(contactDetail.type).to.be.a('string')
+    expectStringOrNullProperty(contactDetail, 'usageType')
   }
 }
 

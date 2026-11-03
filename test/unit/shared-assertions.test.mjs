@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
+import {
+  expectCountyDescriptiveNameOrNull,
+  expectInternalCountryCode
+} from '../utils/address-assertions.js'
 import { assertSelfLink } from '../utils/find-response-assertions.js'
 import {
   expectNumberOrNullProperty,
@@ -119,6 +123,47 @@ describe('link assertions', () => {
       assertSelfLink(
         { self: '/holdings/66/053/0218/parties' },
         'holdings/66/053/0218/locations'
+      )
+    )
+  })
+})
+
+describe('address assertions', () => {
+  it('accepts every UK_INTERNAL_CODE value found in production', () => {
+    for (const countryCode of [
+      'England',
+      'Scotland',
+      'Wales',
+      'Northern Ireland',
+      'Isle of Man',
+      null
+    ]) {
+      assert.doesNotThrow(() => expectInternalCountryCode({ countryCode }))
+    }
+  })
+
+  it('rejects SAM COUNTRY_CODE values in countryCode', () => {
+    assert.throws(() => expectInternalCountryCode({ countryCode: 'GB' }))
+  })
+
+  it('accepts a decoded or masked county and rejects a numeric code', () => {
+    assert.doesNotThrow(() =>
+      expectCountyDescriptiveNameOrNull(
+        { administrativeAreaCounty: 'Devon' },
+        'administrativeAreaCounty'
+      )
+    )
+    assert.doesNotThrow(() =>
+      expectCountyDescriptiveNameOrNull(
+        { administrativeAreaCounty: '*****' },
+        'administrativeAreaCounty',
+        { allowMasked: true }
+      )
+    )
+    assert.throws(() =>
+      expectCountyDescriptiveNameOrNull(
+        { administrativeAreaCounty: '0123' },
+        'administrativeAreaCounty'
       )
     )
   })
