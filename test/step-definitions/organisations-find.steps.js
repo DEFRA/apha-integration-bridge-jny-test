@@ -6,10 +6,6 @@ import {
   assertOkResponseWithDataArray
 } from '../utils/response-assertions.js'
 import {
-  expectCountyDescriptiveNameOrNull,
-  expectInternalCountryCode
-} from '../utils/address-assertions.js'
-import {
   assertOrganisationPiiMasked,
   assertOrganisationPiiUnmasked
 } from '../utils/pii-find-assertions.js'
@@ -18,6 +14,7 @@ import {
   resolveFindValueArg,
   sendFindPostRequest
 } from '../utils/find-request.js'
+import { assertOrganisationShape } from '../utils/organisations-find-assertions.js'
 
 Given(
   'the user submits {string} organisations find POST request with ids {string}',
@@ -122,61 +119,7 @@ Then(
     }
 
     for (const organisation of organisations) {
-      expect(organisation).to.have.property('type', 'organisations')
-      expect(organisation).to.have.property('id')
-      expect(organisation.id).to.be.a('string')
-
-      expect(organisation).to.have.property('organisationName')
-      if (organisation.organisationName !== null) {
-        expect(organisation.organisationName).to.be.a('string')
-      }
-
-      expect(organisation).to.have.property('address')
-      expect(organisation.address).to.be.an('object')
-      expect(organisation.address).to.have.property('primaryAddressableObject')
-      expect(organisation.address).to.have.property(
-        'secondaryAddressableObject'
-      )
-      expect(organisation.address).to.have.property('street')
-      expect(organisation.address).to.have.property('locality')
-      expect(organisation.address).to.have.property('town')
-      expect(organisation.address).to.have.property('postcode')
-      expectCountyDescriptiveNameOrNull(organisation.address, 'county', {
-        allowMasked: true
-      })
-      expectInternalCountryCode(organisation.address)
-
-      expect(organisation).to.have.property('contactDetails')
-      expect(organisation.contactDetails).to.be.an('object')
-      expect(organisation.contactDetails).to.have.property('primaryContact')
-      expect(organisation.contactDetails).to.have.property('secondaryContact')
-
-      const primaryContact = organisation.contactDetails.primaryContact
-      if (primaryContact && typeof primaryContact === 'object') {
-        expect(primaryContact).to.have.property('fullName')
-        expect(primaryContact).to.have.property('emailAddress')
-        expect(primaryContact).to.have.property('phoneNumber')
-      }
-
-      const secondaryContact = organisation.contactDetails.secondaryContact
-      if (secondaryContact && typeof secondaryContact === 'object') {
-        expect(secondaryContact).to.have.property('fullName')
-        expect(secondaryContact).to.have.property('emailAddress')
-        expect(secondaryContact).to.have.property('phoneNumber')
-      }
-
-      expect(organisation).to.have.property('relationships')
-      expect(organisation.relationships).to.be.an('object')
-      expect(organisation.relationships).to.have.property('srabpiPlants')
-      expect(organisation.relationships.srabpiPlants).to.be.an('object')
-      expect(organisation.relationships.srabpiPlants).to.have.property('data')
-      expect(organisation.relationships.srabpiPlants.data).to.be.an('array')
-
-      for (const relatedPlant of organisation.relationships.srabpiPlants.data) {
-        expect(relatedPlant).to.have.property('type', 'srabpi-plants')
-        expect(relatedPlant).to.have.property('id')
-        expect(relatedPlant.id).to.be.a('string')
-      }
+      assertOrganisationShape(organisation, submittedIds)
     }
   }
 )

@@ -63,3 +63,25 @@ export function expectInternalCountryCode(object, key = 'countryCode') {
   ).to.include(countryCode)
   expect(countryCode).to.not.equal('GB')
 }
+
+export function assertResourceHasCounty(resources, resourceId, expectedCounty) {
+  const resource = resources.find((item) => item?.id === resourceId)
+
+  expect(
+    resource,
+    `Expected response to include resource ${resourceId}`
+  ).to.not.equal(undefined)
+
+  const countyValues = [
+    resource.address?.county,
+    resource.address?.administrativeAreaCounty,
+    ...(Array.isArray(resource.addresses)
+      ? resource.addresses.map((address) => address?.county)
+      : [])
+  ].filter((county) => county !== undefined && county !== null)
+
+  expect(
+    countyValues,
+    `Expected resource ${resourceId} to include county "${expectedCounty}"; actual counties: ${countyValues.length ? countyValues.join(', ') : 'none'}`
+  ).to.include(expectedCounty)
+}

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  assertResourceHasCounty,
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from '../utils/address-assertions.js'
@@ -165,6 +166,40 @@ describe('address assertions', () => {
         { administrativeAreaCounty: '0123' },
         'administrativeAreaCounty'
       )
+    )
+  })
+})
+
+describe('county assertions', () => {
+  it('finds counties in each supported response address shape', () => {
+    const resources = [
+      { id: 'organisation', address: { county: 'Fife' } },
+      {
+        id: 'location',
+        address: { administrativeAreaCounty: 'Bristol, City of' }
+      },
+      { id: 'customer', addresses: [{ county: 'SHROPSHIRE' }] }
+    ]
+
+    assert.doesNotThrow(() =>
+      assertResourceHasCounty(resources, 'organisation', 'Fife')
+    )
+    assert.doesNotThrow(() =>
+      assertResourceHasCounty(resources, 'location', 'Bristol, City of')
+    )
+    assert.doesNotThrow(() =>
+      assertResourceHasCounty(resources, 'customer', 'SHROPSHIRE')
+    )
+  })
+
+  it('rejects a missing resource or unexpected county', () => {
+    const resources = [{ id: 'customer', addresses: [{ county: null }] }]
+
+    assert.throws(() =>
+      assertResourceHasCounty(resources, 'missing', 'Cornwall')
+    )
+    assert.throws(() =>
+      assertResourceHasCounty(resources, 'customer', 'Cornwall')
     )
   })
 })

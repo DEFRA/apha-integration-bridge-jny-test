@@ -4,13 +4,19 @@ import {
   expectCountyDescriptiveNameOrNull,
   expectInternalCountryCode
 } from './address-assertions.js'
+import {
+  assertContactMethodShape,
+  assertPartyRoleShape
+} from './party-details-assertions.js'
 import { expectStringOrNullProperty } from './property-assertions.js'
+import { assertRelationshipArrayData } from './relationship-assertions.js'
 
 export function assertCustomerShape(customer, submittedIds) {
   expect(customer).to.have.property('type', 'customers')
   expect(customer).to.have.property('id')
   expect(customer.id).to.be.a('string')
   expect(submittedIds).to.include(customer.id)
+  expect(customer).to.have.property('partyType', 'PERSON')
 
   expect(customer).to.have.property('addresses')
   expect(customer.addresses).to.be.an('array')
@@ -28,12 +34,20 @@ export function assertCustomerShape(customer, submittedIds) {
   }
 
   for (const contactDetail of customer.contactDetails) {
-    expect(contactDetail).to.have.property('isPreferred')
-    expect(contactDetail.isPreferred).to.be.a('boolean')
-    expect(contactDetail).to.have.property('type')
-    expect(contactDetail.type).to.be.a('string')
-    expectStringOrNullProperty(contactDetail, 'usageType')
+    assertContactMethodShape(contactDetail)
   }
+
+  expect(customer).to.have.property('roles')
+  expect(customer.roles).to.be.an('array')
+  for (const role of customer.roles) {
+    assertPartyRoleShape(role)
+  }
+
+  assertRelationshipArrayData(
+    customer.relationships,
+    'srabpiPlants',
+    'srabpi-plants'
+  )
 }
 
 function assertCustomerAddressShape(address) {

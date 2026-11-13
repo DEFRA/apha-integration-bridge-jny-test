@@ -1,4 +1,13 @@
 export default {
+  countyName: {
+    holdingParties: {
+      fallback: {
+        cph: '66/053/0218',
+        id: 'C103406',
+        county: 'ABERDEENSHIRE'
+      }
+    }
+  },
   locations: {
     validId: 'L111321',
     authId: 'L25271'

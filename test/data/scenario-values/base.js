@@ -1,3 +1,4 @@
+import countyName from './base/county-name.js'
 import holdings from './base/holdings.js'
 import holdingsFind from './base/holdings-find.js'
 import holdingsRelated from './base/holdings-related.js'
@@ -9,9 +10,11 @@ import usersFind from './base/users-find.js'
 import caseCreate from './base/case-create.js'
 import customersFind from './base/customers-find.js'
 import organisationsFind from './base/organisations-find.js'
+import partyDetails from './base/party-details.js'
 import workordersActivity from './base/workorders-activity.js'
 
 export default {
+  countyName,
   holdings,
   holdingsFind,
   holdingsRelated,
@@ -23,5 +26,6 @@ export default {
   caseCreate,
   customersFind,
   organisationsFind,
+  partyDetails,
   workordersActivity
 }
