@@ -33,6 +33,19 @@ Given(
   }
 )
 
+Given(
+  'the user submits {string} holding relationship GET request for CPH {string} and relationship {string} using PII-authorised client',
+  async function (endpt, cph, relationship) {
+    await sendHoldingRelationshipRequest({
+      world: this,
+      endpt,
+      cph,
+      relationship,
+      usePiiAuthorisedClient: true
+    })
+  }
+)
+
 Then(
   'the holding relationship API should return the {string} contract for CPH {string}',
   function (relationship, cph) {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
+import { assertResourceHasCounty } from '../utils/address-assertions.js'
 import { assertSelfLink } from '../utils/find-response-assertions.js'
 import {
   expectNumberOrNullProperty,
@@ -120,6 +121,40 @@ describe('link assertions', () => {
         { self: '/holdings/66/053/0218/parties' },
         'holdings/66/053/0218/locations'
       )
+    )
+  })
+})
+
+describe('county assertions', () => {
+  it('finds counties in each supported response address shape', () => {
+    const resources = [
+      { id: 'organisation', address: { county: 'Fife' } },
+      {
+        id: 'location',
+        address: { administrativeAreaCounty: 'Bristol, City of' }
+      },
+      { id: 'customer', addresses: [{ county: 'SHROPSHIRE' }] }
+    ]
+
+    assert.doesNotThrow(() =>
+      assertResourceHasCounty(resources, 'organisation', 'Fife')
+    )
+    assert.doesNotThrow(() =>
+      assertResourceHasCounty(resources, 'location', 'Bristol, City of')
+    )
+    assert.doesNotThrow(() =>
+      assertResourceHasCounty(resources, 'customer', 'SHROPSHIRE')
+    )
+  })
+
+  it('rejects a missing resource or unexpected county', () => {
+    const resources = [{ id: 'customer', addresses: [{ county: null }] }]
+
+    assert.throws(() =>
+      assertResourceHasCounty(resources, 'missing', 'Cornwall')
+    )
+    assert.throws(() =>
+      assertResourceHasCounty(resources, 'customer', 'Cornwall')
     )
   })
 })
