@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import { cfg, makeUri } from '../../config/properties.js'
+import { tokenForPiiAuthorisedClient } from './pii-authorisation.js'
 import { resolveScenarioString } from './scenario-data.js'
 import { strProcessor, token } from './token.js'
 
@@ -26,13 +27,15 @@ export async function sendHoldingRelationshipRequest({
   endpt,
   cph,
   relationship,
+  usePiiAuthorisedClient = false,
   tokenMode = 'valid'
 }) {
   const endpoint = resolveArg(endpt)
   const id = resolveArg(cph)
   const relationshipName = resolveArg(relationship)
-  const cachedToken =
-    world.tokenGen || (await token(tokenUrl, clientId, secretId))
+  const cachedToken = usePiiAuthorisedClient
+    ? await tokenForPiiAuthorisedClient(world)
+    : world.tokenGen || (await token(tokenUrl, clientId, secretId))
 
   let tokenGen = cachedToken
   if (tokenMode === 'invalid') {

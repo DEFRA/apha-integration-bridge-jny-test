@@ -45,11 +45,9 @@ function assertCustomerPii(customers, assertFields) {
 
     for (let index = 0; index < customer.contactDetails.length; index++) {
       const contact = customer.contactDetails[index]
-      assertFields(
+      assertContactMethodPii(
         contact,
-        ['emailAddress', 'phoneNumber'].filter((key) =>
-          Object.hasOwn(contact, key)
-        ),
+        assertFields,
         `customer ${customer.id} contactDetail ${index}`
       )
     }
@@ -79,7 +77,25 @@ function assertOrganisationPii(organisations, assertFields) {
         `organisation ${organisation.id} ${contactType}`
       )
     }
+
+    for (let index = 0; index < organisation.contactMethods.length; index++) {
+      assertContactMethodPii(
+        organisation.contactMethods[index],
+        assertFields,
+        `organisation ${organisation.id} contactMethod ${index}`
+      )
+    }
   }
+}
+
+function assertContactMethodPii(contactMethod, assertFields, label) {
+  assertFields(
+    contactMethod,
+    ['emailAddress', 'phoneNumber', 'faxNumber'].filter((key) =>
+      Object.hasOwn(contactMethod, key)
+    ),
+    label
+  )
 }
 
 function assertLocationPii(locations, assertFields) {
